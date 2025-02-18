@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 from aiounifi.interfaces.api_handlers import ItemEvent
-from aiounifi.models.outlet import Outlet
+from aiounifi.models.device import Outlet
 
 from .fixtures import PDU_PRO, PLUG_UP1, STRIP_UP6
 

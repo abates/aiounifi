@@ -15,6 +15,8 @@ from aiounifi.models.message import MessageKey
 
 from .fixtures import MESSAGE_WIRELESS_CLIENT_REMOVED, WIRED_CLIENT, WIRELESS_CLIENT
 
+from tests.conftest import UnifiCalledWith
+
 test_data = [
     (
         [{"mac": "0"}],
@@ -178,7 +180,7 @@ async def test_clients(
 async def test_client_commands(
     mock_aioresponse: aioresponses,
     unifi_controller: Controller,
-    unifi_called_with: Callable[[str, str, dict[str, Any]], bool],
+    unifi_called_with: UnifiCalledWith,
     method: str,
     mac: str | list[str],
     command: dict[str, str | list[str]],

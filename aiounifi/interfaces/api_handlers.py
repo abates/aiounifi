@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC
-from collections.abc import Callable, ItemsView, Iterator, ValuesView
+from collections import UserDict, defaultdict
+from collections.abc import Callable
 import enum
-from typing import TYPE_CHECKING, Any, Generic, final
+from typing import TYPE_CHECKING, Any, final
 
-from ..models.api import ApiItemT, ApiRequest
+from ..models.api import ApiItem, ApiRequest
 
 if TYPE_CHECKING:
     from ..controller import Controller
@@ -34,12 +35,13 @@ class SubscriptionHandler(ABC):
 
     def __init__(self) -> None:
         """Initialize subscription handler."""
-        self._subscribers: dict[str, list[SubscriptionType]] = {ID_FILTER_ALL: []}
+        super().__init__()
+        self._subscribers: dict[str, list[SubscriptionType]] = defaultdict(list)
 
     def signal_subscribers(self, event: ItemEvent, obj_id: str) -> None:
         """Signal subscribers."""
         subscribers: list[SubscriptionType] = (
-            self._subscribers.get(obj_id, []) + self._subscribers[ID_FILTER_ALL]
+            self._subscribers[obj_id] + self._subscribers[ID_FILTER_ALL]
         )
         for callback, event_filter in subscribers:
             if event_filter is not None and event not in event_filter:
@@ -64,14 +66,10 @@ class SubscriptionHandler(ABC):
             _id_filter = (id_filter,)
 
         for obj_id in _id_filter:
-            if obj_id not in self._subscribers:
-                self._subscribers[obj_id] = []
             self._subscribers[obj_id].append(subscription)
 
         def unsubscribe() -> None:
             for obj_id in _id_filter:
-                if obj_id not in self._subscribers:
-                    continue
                 if subscription not in self._subscribers[obj_id]:
                     continue
                 self._subscribers[obj_id].remove(subscription)
@@ -79,11 +77,11 @@ class SubscriptionHandler(ABC):
         return unsubscribe
 
 
-class APIHandler(SubscriptionHandler, Generic[ApiItemT]):
+class APIHandler[T: ApiItem](SubscriptionHandler, UserDict[T]):
     """Base class for a map of API Items."""
 
     obj_id_key: str
-    item_cls: type[ApiItemT]
+    item_cls: type[T]
     api_request: ApiRequest
     process_messages: tuple[MessageKey, ...] = ()
     remove_messages: tuple[MessageKey, ...] = ()
@@ -92,7 +90,6 @@ class APIHandler(SubscriptionHandler, Generic[ApiItemT]):
         """Initialize API handler."""
         super().__init__()
         self.controller = controller
-        self._items: dict[str, ApiItemT] = {}
 
         if message_filter := self.process_messages + self.remove_messages:
             controller.messages.subscribe(self.process_message, message_filter)
@@ -101,7 +98,7 @@ class APIHandler(SubscriptionHandler, Generic[ApiItemT]):
     async def update(self) -> None:
         """Refresh data."""
         raw = await self.controller.request(self.api_request)
-        self.process_raw(raw.get("data", []))
+        self.process_raw(raw.data)
 
     @final
     def process_raw(self, raw: list[dict[str, Any]]) -> None:
@@ -125,8 +122,8 @@ class APIHandler(SubscriptionHandler, Generic[ApiItemT]):
             return
 
         obj_id: str
-        obj_is_known = (obj_id := raw[self.obj_id_key]) in self._items
-        self._items[obj_id] = self.item_cls(raw)
+        obj_is_known = (obj_id := raw[self.obj_id_key]) in self
+        self[obj_id] = self.item_cls.from_json(data=raw)
 
         self.signal_subscribers(
             ItemEvent.CHANGED if obj_is_known else ItemEvent.ADDED,
@@ -136,37 +133,10 @@ class APIHandler(SubscriptionHandler, Generic[ApiItemT]):
     @final
     def remove_item(self, raw: dict[str, Any]) -> None:
         """Remove item."""
-        obj_id: str
-        if (obj_id := raw[self.obj_id_key]) in self._items:
-            self._items.pop(obj_id)
+        self.pop(raw[self.obj_id_key])
+
+    def pop(self, obj_id: str):
+        """If obj_id is in the dictionary, remove it and signal subscribers."""
+        item = super().pop(obj_id, None)
+        if item:
             self.signal_subscribers(ItemEvent.DELETED, obj_id)
-
-    @final
-    def items(self) -> ItemsView[str, ApiItemT]:
-        """Return items dictionary."""
-        return self._items.items()
-
-    @final
-    def values(self) -> ValuesView[ApiItemT]:
-        """Return items."""
-        return self._items.values()
-
-    @final
-    def get(self, obj_id: str, default: Any | None = None) -> ApiItemT | None:
-        """Get item value based on key, return default if no match."""
-        return self._items.get(obj_id, default)
-
-    @final
-    def __contains__(self, obj_id: str) -> bool:
-        """Validate membership of item ID."""
-        return obj_id in self._items
-
-    @final
-    def __getitem__(self, obj_id: str) -> ApiItemT:
-        """Get item value based on key."""
-        return self._items[obj_id]
-
-    @final
-    def __iter__(self) -> Iterator[str]:
-        """Allow iterate over items."""
-        return iter(self._items)

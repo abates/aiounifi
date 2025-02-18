@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import NotRequired, Self, TypedDict
+from typing import Self
 
-from .api import ApiItem, ApiRequest
+from .api import ApiItem, ApiRequest, json_field
 
 
 class VoucherStatus(StrEnum):
@@ -16,27 +16,70 @@ class VoucherStatus(StrEnum):
     USED_MULTIPLE = "USED_MULTIPLE"
 
 
-class TypedVoucher(TypedDict):
+@dataclass
+class Voucher(ApiItem):
     """Voucher type definition."""
 
-    _id: str
+    id: str = json_field("_id")
     site_id: str
-    note: NotRequired[str]
-    code: str
     quota: int
-    duration: float
-    qos_overwrite: NotRequired[bool]
-    qos_usage_quota: NotRequired[str]
-    qos_rate_max_up: NotRequired[int]
-    qos_rate_max_down: NotRequired[int]
     used: int
-    create_time: float
-    start_time: NotRequired[float]
-    end_time: NotRequired[float]
-    for_hotspot: NotRequired[bool]
     admin_name: str
     status: VoucherStatus
-    status_expires: float
+    voucher_create_time: float = json_field("create_time")
+    voucher_duration: float = json_field("duration")
+    voucher_status_expires: float = json_field("status_expires")
+
+    note: str = ""
+    qos_overwrite: bool | None = None
+    qos_usage_quota: int = 0
+    qos_rate_max_up: int = 0
+    qos_rate_max_down: int = 0
+    for_hotspot: bool | None = None
+    voucher_code: str = json_field("code", default="")
+    voucher_end_time: float | None = json_field("end_time", default=None)
+    voucher_start_time: float | None = json_field("start_time", default=None)
+
+    @property
+    def code(self) -> str:
+        """Code of voucher in known format 00000-00000.
+
+        To enter the code on the captive portal, the hyphen must be placed after the fifth digit.
+        """
+        code = self.voucher_code
+        # API returns the code without a hyphen. But this is necessary. Separate the API string after the fifth digit.
+        return f"{code[:5]}-{code[5:]}"
+
+    @property
+    def duration(self) -> timedelta:
+        """Expiration of voucher."""
+        return timedelta(minutes=self.voucher_duration)
+
+    @property
+    def create_time(self) -> datetime:
+        """Create datetime of voucher."""
+        return datetime.fromtimestamp(self.voucher_create_time)
+
+    @property
+    def start_time(self) -> datetime | None:
+        """Start datetime of first usage of voucher."""
+        if self.voucher_start_time is not None:
+            return datetime.fromtimestamp(self.voucher_start_time)
+        return None
+
+    @property
+    def end_time(self) -> datetime | None:
+        """End datetime of latest usage of voucher."""
+        if self.voucher_end_time is not None:
+            return datetime.fromtimestamp(self.voucher_end_time)
+        return None
+
+    @property
+    def status_expires(self) -> timedelta | None:
+        """Status expires in seconds."""
+        if self.voucher_status_expires > 0:
+            return timedelta(seconds=self.voucher_status_expires)
+        return None
 
 
 @dataclass
@@ -121,110 +164,3 @@ class VoucherDeleteRequest(ApiRequest):
             path="/cmd/hotspot",
             data=data,
         )
-
-
-class Voucher(ApiItem):
-    """Represents a voucher."""
-
-    raw: TypedVoucher
-
-    @property
-    def id(self) -> str:
-        """ID of voucher."""
-        return self.raw["_id"]
-
-    @property
-    def site_id(self) -> str:
-        """Site ID."""
-        return self.raw["site_id"]
-
-    @property
-    def note(self) -> str:
-        """Note given by creator to voucher."""
-        return self.raw.get("note") or ""
-
-    @property
-    def code(self) -> str:
-        """Code of voucher in known format 00000-00000.
-
-        To enter the code on the captive portal, the hyphen must be placed after the fifth digit.
-        """
-        c = self.raw.get("code", "")
-        # API returns the code without a hyphen. But this is necessary. Separate the API string after the fifth digit.
-        return f"{c[:5]}-{c[5:]}"
-
-    @property
-    def quota(self) -> int:
-        """Allowed uses (0 = unlimited) of voucher."""
-        return self.raw["quota"]
-
-    @property
-    def duration(self) -> timedelta:
-        """Expiration of voucher."""
-        return timedelta(minutes=self.raw["duration"])
-
-    @property
-    def qos_overwrite(self) -> bool:
-        """Defaults for QoS overwritten by the use of this voucher."""
-        return self.raw.get("qos_overwrite", False)
-
-    @property
-    def qos_usage_quota(self) -> int:
-        """Quantity of bytes (in MB) allowed when using this voucher."""
-        return int(self.raw.get("qos_usage_quota", 0))
-
-    @property
-    def qos_rate_max_up(self) -> int:
-        """Up speed (in kbps) allowed when using this voucher."""
-        return self.raw.get("qos_rate_max_up", 0)
-
-    @property
-    def qos_rate_max_down(self) -> int:
-        """Down speed (in kbps) allowed when using this voucher."""
-        return self.raw.get("qos_rate_max_down", 0)
-
-    @property
-    def used(self) -> int:
-        """Number of uses of this voucher."""
-        return self.raw["used"]
-
-    @property
-    def create_time(self) -> datetime:
-        """Create datetime of voucher."""
-        return datetime.fromtimestamp(self.raw["create_time"])
-
-    @property
-    def start_time(self) -> datetime | None:
-        """Start datetime of first usage of voucher."""
-        if "start_time" in self.raw:
-            return datetime.fromtimestamp(self.raw["start_time"])
-        return None
-
-    @property
-    def end_time(self) -> datetime | None:
-        """End datetime of latest usage of voucher."""
-        if "end_time" in self.raw:
-            return datetime.fromtimestamp(self.raw["end_time"])
-        return None
-
-    @property
-    def for_hotspot(self) -> bool:
-        """For hotspot use."""
-        return self.raw.get("for_hotspot", False)
-
-    @property
-    def admin_name(self) -> str:
-        """Creator name of voucher."""
-        return self.raw["admin_name"]
-
-    @property
-    def status(self) -> VoucherStatus:
-        """Status of voucher."""
-        return self.raw["status"]
-
-    @property
-    def status_expires(self) -> timedelta | None:
-        """Status expires in seconds."""
-        if (status_expiry := self.raw["status_expires"]) > 0:
-            return timedelta(seconds=status_expiry)
-        return None

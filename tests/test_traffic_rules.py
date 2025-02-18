@@ -5,7 +5,7 @@ pytest --cov-report term-missing --cov=aiounifi.traffic_rule tests/test_traffic_
 
 import pytest
 
-from aiounifi.models.traffic_rule import TrafficRuleEnableRequest
+from aiounifi.models.traffic_rule import TargetDevice, TrafficRuleEnableRequest
 
 from .fixtures import TRAFFIC_RULES, WIRELESS_CLIENT
 
@@ -113,6 +113,7 @@ async def test_traffic_rules(unifi_controller, unifi_called_with):
     assert traffic_rule.enabled is False
     assert traffic_rule.action == "BLOCK"
     assert traffic_rule.matching_target == "INTERNET"
-    assert traffic_rule.target_devices == [
+    target_device1 = TargetDevice.from_json(
         {"client_mac": WIRELESS_CLIENT["mac"], "type": "CLIENT"}
-    ]
+    )
+    assert traffic_rule.target_devices == [target_device1]

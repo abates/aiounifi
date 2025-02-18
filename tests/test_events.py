@@ -57,24 +57,19 @@ async def test_event_handler(event_filter, expected):
 
 async def test_unsupported_event_key():
     """Test empty event."""
-    event = Event({"key": "unsupported"})
+    event = Event.from_json({"key": "unsupported"})
     assert event.key == EventKey.UNKNOWN
 
 
 async def test_empty_event():
     """Test empty event."""
-    empty = Event({})
+    empty = Event.from_json({})
 
-    with pytest.raises(KeyError):
-        assert empty.event
-    with pytest.raises(KeyError):
-        assert empty.key
-    with pytest.raises(KeyError):
-        assert empty.datetime
-    with pytest.raises(KeyError):
-        assert empty.msg
-    with pytest.raises(KeyError):
-        assert empty.time
+    assert empty.event is None
+    assert empty.key is None
+    assert empty.datetime is None
+    assert empty.msg is None
+    assert empty.time is None
     assert empty.mac == ""
     assert empty.ap == ""
     assert empty.bytes == 0
@@ -90,7 +85,7 @@ async def test_empty_event():
 async def test_client_event():
     """Test client event."""
     event_data = EVENT_WIRELESS_CLIENT_CONNECTED["data"][0]
-    client = Event(event_data)
+    client = Event.from_json(event_data)
 
     assert client.event == "EVT_WU_Connected"
     assert client.key == EventKey.WIRELESS_CLIENT_CONNECTED
@@ -115,7 +110,7 @@ async def test_client_event():
 async def test_device_event():
     """Test device event."""
     event_data = EVENT_SWITCH_16_CONNECTED["data"][0]
-    device = Event(event_data)
+    device = Event.from_json(event_data)
 
     assert device.event == "EVT_SW_Connected"
     assert device.key == EventKey.SWITCH_CONNECTED

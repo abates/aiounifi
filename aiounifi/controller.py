@@ -13,9 +13,15 @@ from .interfaces.dpi_restriction_apps import DPIRestrictionApps
 from .interfaces.dpi_restriction_groups import DPIRestrictionGroups
 from .interfaces.events import EventHandler
 from .interfaces.messages import MessageHandler
+from .interfaces.networks import Networks
 from .interfaces.outlets import Outlets
 from .interfaces.port_forwarding import PortForwarding
 from .interfaces.ports import Ports
+from .interfaces.security import (
+    FirewallAddressGroups,
+    FirewallPortGroups,
+    FirewallRules,
+)
 from .interfaces.sites import Sites
 from .interfaces.system_information import SystemInformationHandler
 from .interfaces.traffic_routes import TrafficRoutes
@@ -25,7 +31,7 @@ from .interfaces.wlans import Wlans
 from .models.configuration import Configuration
 
 if TYPE_CHECKING:
-    from .models.api import ApiRequest, TypedApiResponse
+    from .models.api import ApiRequest, ApiResponse
 
 LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +49,10 @@ class Controller:
         self.clients = Clients(self)
         self.clients_all = ClientsAll(self)
         self.devices = Devices(self)
+        self.firewall_address_groups = FirewallAddressGroups(self)
+        self.firewall_port_groups = FirewallPortGroups(self)
+        self.firewall_rules = FirewallRules(self)
+        self.networks = Networks(self)
         self.outlets = Outlets(self)
         self.ports = Ports(self)
         self.dpi_apps = DPIRestrictionApps(self)
@@ -60,7 +70,7 @@ class Controller:
         await self.connectivity.check_unifi_os()
         await self.connectivity.login()
 
-    async def request(self, api_request: ApiRequest) -> TypedApiResponse:
+    async def request(self, api_request: ApiRequest) -> ApiResponse:
         """Make a request to the API, retry login on failure."""
         return await self.connectivity.request(api_request)
 

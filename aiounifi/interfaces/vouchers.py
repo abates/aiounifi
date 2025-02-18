@@ -1,6 +1,6 @@
 """Hotspot vouchers as part of a UniFi network."""
 
-from ..models.api import TypedApiResponse
+from ..models.api import ApiResponse
 from ..models.voucher import (
     Voucher,
     VoucherCreateRequest,
@@ -17,7 +17,7 @@ class Vouchers(APIHandler[Voucher]):
     item_cls = Voucher
     api_request = VoucherListRequest.create()
 
-    async def create(self, voucher: Voucher) -> TypedApiResponse:
+    async def create(self, voucher: Voucher) -> ApiResponse:
         """Create voucher on controller."""
         return await self.controller.request(
             VoucherCreateRequest.create(
@@ -32,7 +32,7 @@ class Vouchers(APIHandler[Voucher]):
             )
         )
 
-    async def delete(self, voucher: Voucher) -> TypedApiResponse:
+    async def delete(self, voucher: Voucher) -> ApiResponse:
         """Delete voucher from controller."""
         return await self.controller.request(
             VoucherDeleteRequest.create(

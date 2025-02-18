@@ -3,554 +3,630 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import enum
 import logging
 import re
-from typing import Any, NotRequired, Self, TypedDict, cast
+from typing import Self
 
-from .api import ApiItem, ApiRequest
+from .api import ApiItem, ApiRequest, json_field
 
 LOGGER = logging.getLogger(__name__)
 
 
-class TypedDeviceAntennaTable(TypedDict):
+@dataclass
+class DeviceAntennaTable(ApiItem):
     """Device antenna table type definition."""
 
-    default: bool
-    id: int
-    name: str
-    wifi0_gain: int
-    wifi1_gain: int
+    default: bool = False
+    id: int = 0
+    name: str = ""
+    wifi0_gain: int = 0
+    wifi1_gain: int = 0
 
 
-class TypedDeviceConfigNetwork(TypedDict):
+@dataclass
+class DeviceConfigNetwork(ApiItem):
     """Device config network type definition."""
 
-    ip: str
-    type: str
+    ip: str = ""
+    type: str = ""
 
 
-class TypedDeviceEthernetOverrides(TypedDict):
+@dataclass
+class DeviceEthernetOverrides(ApiItem):
     """Device ethernet overrides type definition."""
 
-    ifname: str
-    networkgroup: str
+    ifname: str = ""
+    networkgroup: str = ""
 
 
-class TypedDeviceEthernetTable(TypedDict):
+@dataclass
+class DeviceEthernetTable(ApiItem):
     """Device ethernet table type definition."""
 
-    mac: str
-    name: str
-    num_port: int
+    mac: str = ""
+    name: str = ""
+    num_port: int = 0
 
 
-class TypedDeviceLastUplink(TypedDict):
+@dataclass
+class DeviceLastUplink(ApiItem):
     """Device last uplink type definition."""
 
-    port_idx: int
-    type: str
-    uplink_mac: str
-    uplink_device_name: str
-    uplink_remote_port: int
+    port_idx: int = 0
+    type: str = ""
+    uplink_mac: str = ""
+    uplink_device_name: str = ""
+    uplink_remote_port: int = 0
 
 
-class TypedDeviceLldpTable(TypedDict):
+@dataclass
+class DeviceLldpTable(ApiItem):
     """Device LLDP table type definition."""
 
-    chassis_id: str
-    chassis_id_subtype: str
-    is_wired: bool
-    local_port_idx: int
-    local_port_name: str
-    port_id: str
+    chassis_id: str = ""
+    chassis_id_subtype: str = ""
+    is_wired: bool = False
+    local_port_idx: int = 0
+    local_port_name: str = ""
+    port_id: str = ""
 
 
-class TypedDeviceNetworkTable(TypedDict):
+@dataclass
+class DeviceNetworkTable(ApiItem):
     """Device network table type definition."""
 
-    _id: str
-    attr_hidden_id: str
-    attr_no_delete: bool
-    dhcp_relay_enabled: bool
-    dhcpd_dns_1: str
-    dhcpd_dns_enabled: bool
-    dhcpd_enabled: bool
-    dhcpd_gateway_enabled: bool
-    dhcpd_leasetime: int
-    dhcpd_start: str
-    dhcpd_stop: str
-    dhcpd_time_offset_enabled: bool
-    dhcpd_unifi_controller: str
-    domain_name: str
-    enabled: bool
-    ip: str
-    ip_subnet: str
-    is_guest: bool
-    is_nat: bool
-    lte_lan_enabled: bool
-    mac: str
-    name: str
-    networkgroup: str
-    num_sta: int
-    purpose: str
-    rx_bytes: int
-    rx_packets: int
-    site_id: str
-    tx_bytes: int
-    tx_packets: int
-    up: str
-    vlan_enabled: bool
+    _id: str = ""
+    attr_hidden_id: str = ""
+    attr_no_delete: bool = False
+    dhcp_relay_enabled: bool = False
+    dhcpd_dns_1: str = ""
+    dhcpd_dns_enabled: bool = False
+    dhcpd_enabled: bool = False
+    dhcpd_gateway_enabled: bool = False
+    dhcpd_leasetime: int = 0
+    dhcpd_start: str = ""
+    dhcpd_stop: str = ""
+    dhcpd_time_offset_enabled: bool = False
+    dhcpd_unifi_controller: str = ""
+    domain_name: str = ""
+    enabled: bool = False
+    ip: str = ""
+    ip_subnet: str = ""
+    is_guest: bool = False
+    is_nat: bool = False
+    lte_lan_enabled: bool = False
+    mac: str = ""
+    name: str = ""
+    networkgroup: str = ""
+    num_sta: int = 0
+    purpose: str = ""
+    rx_bytes: int = 0
+    rx_packets: int = 0
+    site_id: str = ""
+    tx_bytes: int = 0
+    tx_packets: int = 0
+    up: str = ""
+    vlan_enabled: bool = False
 
 
-class TypedDeviceOutletOverrides(TypedDict, total=False):
+@dataclass
+class DeviceOutletOverrides(ApiItem):
     """Device outlet overrides type definition."""
 
-    cycle_enabled: bool
-    index: int
-    has_relay: bool
-    has_metering: bool
-    name: str
-    relay_state: bool
+    cycle_enabled: bool | None = None
+    index: int = 0
+    has_relay: bool | None = None
+    has_metering: bool | None = None
+    name: str | None = None
+    relay_state: bool | None = None
 
 
-class TypedDeviceOutletTable(TypedDict):
+@dataclass
+class Outlet(ApiItem):
     """Device outlet table type definition."""
 
-    cycle_enabled: NotRequired[bool]
-    index: int
-    has_relay: NotRequired[bool]
-    has_metering: NotRequired[bool]
-    name: str
-    outlet_caps: int
-    outlet_voltage: NotRequired[str]
-    outlet_current: NotRequired[str]
-    outlet_power: NotRequired[str]
-    outlet_power_factor: NotRequired[str]
-    relay_state: bool
+    caps: int | None = json_field("outlet_caps", default=None)
+    current: str | None = json_field("outlet_current", default=None)
+    cycle_enabled: bool | None = None
+    has_relay: bool | None = None
+    has_metering: bool | None = None
+    index: int = 0
+    name: str = ""
+    power: str | None = json_field("outlet_power", default=None)
+    power_factor: str | None = json_field("outlet_power_factor", default=None)
+    relay_state: bool | None = None
+    voltage: str | None = json_field("outlet_voltage", default=None)
+
+    def __repr__(self) -> str:
+        """Return the representation."""
+        return f"<{self.name}: relay state {self.relay_state}>"
 
 
-class TypedDevicePortOverrides(TypedDict, total=False):
+@dataclass
+class DevicePortOverrides(ApiItem):
     """Device port overrides type definition."""
 
-    poe_mode: str
-    port_idx: int
-    portconf_id: str
+    name: str | None = None
+    poe_mode: str = ""
+    port_idx: int = 0
+    portconf_id: str | None = None
+    port_security_mac_address: list[str] | None = None
+    autoneg: bool | None = None
+    stp_port_mode: bool | None = None
 
 
-class TypedDevicePortTableLldpTable(TypedDict):
+@dataclass
+class DevicePortTableLldpTable(ApiItem):
     """Device port table mac table type definition."""
 
-    lldp_chassis_id: str
-    lldp_port_id: str
-    lldp_system_name: str
+    lldp_chassis_id: str = ""
+    lldp_port_id: str = ""
+    lldp_system_name: str = ""
 
 
-class TypedDevicePortTableMacTable(TypedDict):
+@dataclass
+class DevicePortTableMacTable(ApiItem):
     """Device port table mac table type definition."""
 
-    age: int
-    mac: str
-    static: bool
-    uptime: int
-    vlan: int
+    age: int = 0
+    mac: str = ""
+    static: bool = False
+    uptime: int = 0
+    vlan: int = 0
 
 
-class TypedDevicePortTablePortDelta(TypedDict):
+@dataclass
+class DevicePortTablePortDelta(ApiItem):
     """Device port table port delta type definition."""
 
-    rx_bytes: int
-    rx_packets: int
-    time_delta: int
-    time_delta_activity: int
-    tx_bytes: int
-    tx_packets: int
+    rx_bytes: int = 0
+    rx_packets: int = 0
+    time_delta: int = 0
+    time_delta_activity: int = 0
+    tx_bytes: int = 0
+    tx_packets: int = 0
 
 
-class TypedDevicePortTable(TypedDict):
+@dataclass
+class Port(ApiItem):
     """Device port table type definition."""
 
-    aggregated_by: bool
-    attr_no_edit: bool
-    autoneg: bool
-    bytes_r: int
-    dot1x_mode: str
-    dot1x_status: str
-    enable: bool
-    flowctrl_rx: bool
-    flowctrl_tx: bool
-    full_duplex: bool
-    ifname: NotRequired[str]
-    is_uplink: bool
-    jumbo: bool
-    lldp_table: list[TypedDevicePortTableLldpTable]
-    mac_table: list[TypedDevicePortTableMacTable]
-    masked: bool
-    media: str
-    name: str
-    op_mode: str
-    poe_caps: int
-    poe_class: str
-    poe_current: str
-    poe_enable: bool
-    poe_good: bool
-    poe_mode: str
-    poe_power: str
-    poe_voltage: str
-    port_delta: TypedDevicePortTablePortDelta
-    port_idx: NotRequired[int]
-    port_poe: bool
-    portconf_id: str
-    rx_broadcast: int
-    rx_bytes: int
-    rx_bytes_r: int
-    rx_dropped: int
-    rx_errors: int
-    rx_multicast: int
-    rx_packets: int
-    speed: int
-    speed_caps: int
-    stp_pathcost: int
-    stp_state: str
-    tx_broadcast: int
-    tx_bytes: int
-    tx_bytes_r: int
-    tx_dropped: int
-    tx_errors: int
-    tx_multicast: int
-    tx_packets: int
-    up: NotRequired[bool]
+    aggregated_by: bool | None = None
+    attr_no_edit: bool | None = None
+    autoneg: bool | None = None
+    bytes_r: int | None = json_field("bytes-r", default=None)
+    dns: list[str] | None = None
+    dot1x_mode: str | None = None
+    dot1x_status: str | None = None
+    enable: bool | None = None
+    flowctrl_rx: bool | None = None
+    flowctrl_tx: bool | None = None
+    full_duplex: bool | None = None
+    gateway: str | None = None
+    ip: str | None = None
+    is_uplink: bool | None = None
+    jumbo: bool | None = None
+    lldp_table: list[DevicePortTableLldpTable] = field(default_factory=list)
+    mac: str | None = None
+    mac_table: list[DevicePortTableMacTable] = field(default_factory=list)
+    masked: bool | None = None
+    media: str | None = None
+    port_name: str | None = json_field("name", default=None)
+    netmask: str | None = None
+    op_mode: str | None = None
+    poe_caps: int | None = None
+    poe_class: str | None = None
+    poe_current: str | None = None
+    poe_enable: bool | None = None
+    poe_good: bool | None = None
+    poe_mode: str | None = None
+    poe_power: str | None = None
+    poe_voltage: str | None = None
+    port_delta: DevicePortTablePortDelta | None = None
+    port_poe: bool | None = None
+    portconf_id: str | None = None
+    rx_broadcast: int | None = None
+    rx_bytes: int | None = None
+    rx_bytes_r: int = json_field("rx_bytes-r", default=None)  # type: ignore
+    rx_dropped: int | None = None
+    rx_errors: int | None = None
+    rx_multicast: int | None = None
+    rx_packets: int | None = None
+    satisfaction: int | None = None
+    satisfaction_reason: int | None = None
+    speed: int | None = None
+    speed_caps: int | None = None
+    stp_pathcost: int | None = None
+    stp_state: str | None = None
+    tx_broadcast: int | None = None
+    tx_bytes: int | None = None
+    tx_bytes_r: int = json_field("tx_bytes-r", default=None)  # type: ignore
+    tx_dropped: int | None = None
+    tx_errors: int | None = None
+    tx_multicast: int | None = None
+    tx_packets: int | None = None
+
+    ifname: str | None = None
+    port_idx: int = 0
+    up: bool = False
+
+    @property
+    def name(self) -> str:
+        """Port name."""
+        if not self.port_name:
+            # Unifi controller allows to set an empty port name, but it
+            # shows up as "Port N" consistently across UI. We mirror the
+            # behavior, as empty name is rarely visually helpful.
+            return f"Port {self.port_idx}"
+        return self.port_name
+
+    def __repr__(self) -> str:
+        """Return the representation."""
+        return f"<{self.name}: Poe {self.poe_enable}>"
 
 
-class TypedDeviceRadioTable(TypedDict):
+@dataclass
+class DeviceRadioTable(ApiItem):
     """Device radio table type definition."""
 
-    antenna_gain: int
-    builtin_ant_gain: int
-    builtin_antenna: bool
-    channel: int
-    current_antenna_gain: int
-    hard_noise_floor_enabled: bool
-    has_dfs: bool
-    has_fccdfs: bool
-    ht: str
-    is_11ac: bool
-    max_txpower: int
-    min_rssi_enabled: bool
-    min_txpower: int
-    name: str
-    nss: int
-    radio: str
-    radio_caps: int
-    sens_level_enabled: bool
-    tx_power_mode: str
-    wlangroup_id: str
+    antenna_gain: int = 0
+    builtin_ant_gain: int = 0
+    builtin_antenna: bool = False
+    channel: int = 0
+    current_antenna_gain: int = 0
+    hard_noise_floor_enabled: bool = False
+    has_dfs: bool = False
+    has_fccdfs: bool = False
+    ht: str = ""
+    is_11ac: bool = False
+    max_txpower: int = 0
+    min_rssi_enabled: bool = False
+    min_txpower: int = 0
+    name: str = ""
+    nss: int = 0
+    radio: str = ""
+    radio_caps: int = 0
+    sens_level_enabled: bool = False
+    tx_power_mode: str = ""
+    wlangroup_id: str = ""
 
 
-class TypedDeviceRadioTableStats(TypedDict):
+@dataclass
+class DeviceRadioTableStats(ApiItem):
     """Device radio table statistics type definition."""
 
-    ast_be_xmit: int
-    ast_cst: int
-    ast_txto: int
-    channel: int
-    cu_self_rx: int
-    cu_self_tx: int
-    cu_total: int
-    extchannel: int
-    gain: int
-    guest_num_sta: int
-    name: str
-    num_sta: int
-    radio: str
-    satisfaction: int
-    state: str
-    tx_packets: str
-    tx_power: str
-    tx_retries: str
-    user_num_sta: str
+    ast_be_xmit: int = 0
+    ast_cst: int = 0
+    ast_txto: int = 0
+    channel: int = 0
+    cu_self_rx: int = 0
+    cu_self_tx: int = 0
+    cu_total: int = 0
+    extchannel: int = 0
+    gain: int = 0
+    guest_num_sta: int = json_field("guest_num-sta", default=0)  # type: ignore
+    name: str = ""
+    num_sta: int = 0
+    radio: str = ""
+    satisfaction: int = 0
+    state: str = ""
+    tx_packets: str = ""
+    tx_power: str = ""
+    tx_retries: str = ""
+    user_num_sta: str = ""
 
 
-class TypedDeviceSwitchCaps(TypedDict):
+@dataclass
+class DeviceSwitchCaps(ApiItem):
     """Device switch caps type definition."""
 
-    feature_caps: int
-    max_aggregate_sessions: int
-    max_mirror_sessions: int
-    vlan_caps: int
+    feature_caps: int = 0
+    max_aggregate_sessions: int = 0
+    max_mirror_sessions: int = 0
+    vlan_caps: int = 0
 
 
-class TypedDeviceSysStats(TypedDict):
+@dataclass
+class DeviceSysStats(ApiItem):
     """Device sys stats type definition."""
 
-    loadavg_1: str
-    loadavg_15: str
-    loadavg_5: str
-    mem_buffer: int
-    mem_total: int
-    mem_used: int
+    loadavg_1: str = ""
+    loadavg_15: str = ""
+    loadavg_5: str = ""
+    mem_buffer: int = 0
+    mem_total: int = 0
+    mem_used: int = 0
 
 
-class TypedDeviceSystemStats(TypedDict):
+@dataclass
+class DeviceSystemStats(ApiItem):
     """Device system stats type definition."""
 
-    cpu: str
-    mem: str
-    uptime: str
+    cpu: str = ""
+    mem: str = ""
+    uptime: str = ""
 
 
-class TypedDeviceTemperature(TypedDict):
+@dataclass
+class DeviceTemperature(ApiItem):
     """Device temperature type definition."""
 
-    name: str
-    type: str
-    value: float
+    name: str = ""
+    type: str = ""
+    value: float = 0.0
 
 
-class TypedDeviceUplink(TypedDict):
+@dataclass
+class DeviceUplink(ApiItem):
     """Device uplink type definition."""
 
-    full_duplex: bool
-    ip: str
-    mac: str
-    max_speed: int
-    max_vlan: int
-    media: str
-    name: str
-    netmask: str
-    num_port: int
-    rx_bytes: int
-    rx_bytes_r: int
-    rx_dropped: int
-    rx_errors: int
-    rx_multicast: int
-    rx_packets: int
-    speed: int
-    tx_bytes: int
-    tx_bytes_r: int
-    tx_dropped: int
-    tx_errors: int
-    tx_packets: int
-    type: str
-    up: bool
-    uplink_mac: str
-    uplink_remote_port: int
+    full_duplex: bool = False
+    ip: str = ""
+    mac: str = ""
+    max_speed: int = 0
+    max_vlan: int = 0
+    media: str = ""
+    name: str = ""
+    netmask: str = ""
+    num_port: int = 0
+    rx_bytes: int = 0
+    rx_bytes_r: int = 0
+    rx_dropped: int = 0
+    rx_errors: int = 0
+    rx_multicast: int = 0
+    rx_packets: int = 0
+    speed: int = 0
+    tx_bytes: int = 0
+    tx_bytes_r: int = 0
+    tx_dropped: int = 0
+    tx_errors: int = 0
+    tx_packets: int = 0
+    type: str = ""
+    up: bool = False
+    uplink_mac: str = ""
+    uplink_remote_port: int = 0
 
 
-class TypedDeviceUptimeStatsWanMonitor(TypedDict):
+@dataclass
+class DeviceUptimeStatsWanMonitor(ApiItem):
     """Device uptime stats wan monitor type definition."""
 
-    availability: float
-    latency_average: NotRequired[int]
-    target: str
-    type: str
+    availability: float = 0.0
+    target: str = ""
+    type: str = ""
+
+    latency_average: int | None = None
 
 
-class TypedDeviceUptimeStatsWan(TypedDict):
+@dataclass
+class DeviceUptimeStatsWan(ApiItem):
     """Device uptime stats wan type definition."""
 
-    monitors: list[TypedDeviceUptimeStatsWanMonitor]
+    monitors: list[DeviceUptimeStatsWanMonitor]
 
 
-class TypedDeviceUptimeStats(TypedDict):
+@dataclass
+class DeviceUptimeStats(ApiItem):
     """Device uptime stats type definition."""
 
-    WAN: TypedDeviceUptimeStatsWan
-    WAN2: TypedDeviceUptimeStatsWan
+    WAN: DeviceUptimeStatsWan
+    WAN2: DeviceUptimeStatsWan
 
 
-class TypedDeviceWlanOverrides(TypedDict):
+@dataclass
+class DeviceWlanOverrides(ApiItem):
     """Device wlan overrides type definition."""
 
-    name: str
-    radio: str
-    radio_name: str
-    wlan_id: str
+    name: str = ""
+    radio: str = ""
+    radio_name: str = ""
+    wlan_id: str = ""
 
 
-class TypedDeviceSpeedtestStatus(TypedDict):
+@dataclass
+class DeviceSpeedtestStatus(ApiItem):
     """Device speedtest status type definition."""
 
-    latency: int
-    rundate: int
-    runtime: int
-    status_download: int
-    status_ping: int
-    status_summary: int
-    status_upload: int
-    xput_download: float
-    xput_upload: float
+    latency: int = 0
+    rundate: int = 0
+    runtime: int = 0
+    status_download: int = 0
+    status_ping: int = 0
+    status_summary: int = 0
+    status_upload: int = 0
+    xput_download: float = 0.0
+    xput_upload: float = 0.0
 
 
-class TypedDeviceStorage(TypedDict):
+@dataclass
+class DeviceStorage(ApiItem):
     """Device storage type definition."""
 
-    mount_point: str
-    name: str
-    size: int
-    type: str
-    used: int
+    mount_point: str = ""
+    name: str = ""
+    size: int = 0
+    type: str = ""
+    used: int = 0
 
 
-class TypedDevice(TypedDict):
+@dataclass
+class Device(ApiItem):
     """Device type definition."""
 
-    _id: str
-    _uptime: int
-    adoptable_when_upgraded: bool
-    adopted: bool
-    antenna_table: list[TypedDeviceAntennaTable]
-    architecture: str
-    adoption_completed: int
-    board_rev: NotRequired[int]
-    bytes: int
-    bytes_d: int
-    bytes_r: int
-    cfgversion: int
-    config_network: TypedDeviceConfigNetwork
-    connect_request_ip: str
-    connect_request_port: str
-    considered_lost_at: int
-    country_code: int
-    countrycode_table: list  # type: ignore[type-arg]
-    device_id: str
-    dhcp_server_table: list  # type: ignore[type-arg]
-    disabled: NotRequired[bool]
-    disconnection_reason: str
-    displayable_version: str
-    dot1x_portctrl_enabled: bool
-    downlink_table: list  # type: ignore[type-arg]
-    element_ap_serial: str
-    element_peer_mac: str
-    element_uplink_ap_mac: str
-    ethernet_overrides: list[TypedDeviceEthernetOverrides]
-    ethernet_table: list[TypedDeviceEthernetTable]
-    fan_level: int
-    flowctrl_enabled: bool
-    fw_caps: int
-    gateway_mac: str
-    general_temperature: NotRequired[int]
-    guest_num_sta: int
-    guest_wlan_num_sta: int
-    guest_token: str
-    has_eth1: bool
-    has_fan: bool
-    has_speaker: bool
-    has_temperature: bool
-    hash_id: str
-    hide_ch_width: str
-    hw_caps: int
-    inform_ip: str
-    inform_url: str
-    internet: bool
-    ip: NotRequired[str]
-    isolated: bool
-    jumboframe_enabled: bool
-    kernel_version: str
-    known_cfgversion: str
-    last_seen: int
-    last_uplink: TypedDeviceLastUplink
-    lcm_brightness: int
-    lcm_brightness_override: bool
-    lcm_idle_timeout_override: bool
-    lcm_night_mode_begins: str
-    lcm_night_mode_enabled: bool
-    lcm_night_mode_ends: str
-    lcm_tracker_enabled: bool
-    led_override: str
-    led_override_color: str
-    led_override_color_brightness: int
-    license_state: str
-    lldp_table: list[TypedDeviceLldpTable]
-    locating: bool
-    mac: str
-    manufacturer_id: int
-    meshv3_peer_mac: str
-    model: str
-    model_in_eol: bool
-    model_in_lts: bool
-    model_incompatible: bool
-    name: str
-    network_table: list[TypedDeviceNetworkTable]
-    next_heartbeat_at: int
-    next_interval: int
-    num_desktop: int
-    num_handheld: int
-    num_mobile: int
-    num_sta: int
-    outdoor_mode_override: str
-    outlet_ac_power_budget: str
-    outlet_ac_power_consumption: str
-    outlet_enabled: bool
-    outlet_overrides: list[TypedDeviceOutletOverrides]
-    outlet_table: list[TypedDeviceOutletTable]
-    overheating: bool
-    power_source_ctrl_enabled: bool
-    prev_non_busy_state: int
-    provisioned_at: int
-    port_overrides: list[TypedDevicePortOverrides]
-    port_table: NotRequired[list[TypedDevicePortTable]]
-    radio_table: list[TypedDeviceRadioTable]
-    radio_table_stats: list[TypedDeviceRadioTableStats]
-    required_version: str
-    rollupgrade: bool
-    rx_bytes: int
-    rx_bytes_d: int
-    satisfaction: int
-    scan_radio_table: list  # type: ignore[type-arg]
-    scanning: bool
-    serial: str
-    site_id: str
-    spectrum_scanning: bool
-    speedtest_status: TypedDeviceSpeedtestStatus | None
-    ssh_session_table: list  # type: ignore[type-arg]
-    start_connected_millis: int
-    start_disconnected_millis: int
-    stat: dict  # type: ignore[type-arg]
-    state: int
-    storage: list[TypedDeviceStorage] | None
-    stp_priority: str
-    stp_version: str
-    switch_caps: TypedDeviceSwitchCaps
-    sys_error_caps: int
-    sys_stats: TypedDeviceSysStats
-    syslog_key: str
-    system_stats: TypedDeviceSystemStats
-    temperatures: list[TypedDeviceTemperature] | None
-    two_phase_adopt: bool
-    tx_bytes: int
-    tx_bytes_d: int
-    type: str
-    unsupported: bool
-    unsupported_reason: int
-    upgradable: bool
-    upgrade_state: int
-    upgrade_to_firmware: str
-    uplink: TypedDeviceUplink
-    uplink_depth: int
-    uplink_table: list  # type: ignore[type-arg]
-    uptime: int
-    uptime_stats: TypedDeviceUptimeStats | None
-    user_num_sta: int
-    user_wlan_num_sta: int
-    usg_caps: int
-    vap_table: list[dict]  # type: ignore[type-arg]
-    version: str
-    vwireEnabled: bool
-    vwire_table: list  # type: ignore[type-arg]
-    vwire_vap_table: list  # type: ignore[type-arg]
-    wifi_caps: int
-    wlan_overrides: list[TypedDeviceWlanOverrides]
-    wlangroup_id_na: str
-    wlangroup_id_ng: str
-    x_aes_gcm: bool
-    x_authkey: str
-    x_fingerprint: str
-    x_has_ssh_hostkey: bool
-    x_inform_authkey: str
-    x_ssh_hostkey_fingerprint: str
-    x_vwirekey: str
+    _id: str = ""
+    _uptime: int = 0
+    adoptable_when_upgraded: bool = False
+    adopted: bool = False
+    antenna_table: list[DeviceAntennaTable] = field(default_factory=list)
+    architecture: str = ""
+    adoption_completed: int = 0
+    bytes: int = 0
+    bytes_d: int = 0
+    bytes_r: int = 0
+    cfgversion: int = 0
+    config_network: DeviceConfigNetwork | None = None
+    connect_request_ip: str = ""
+    connect_request_port: str = ""
+    considered_lost_at: int = 0
+    country_code: int = 0
+    countrycode_table: list = field(default_factory=list)
+    device_id: str = ""
+    dhcp_server_table: list = field(default_factory=list)
+    disconnection_reason: str = ""
+    displayable_version: str = ""
+    dot1x_portctrl_enabled: bool = False
+    downlink_table: list = field(default_factory=list)
+    element_ap_serial: str = ""
+    element_peer_mac: str = ""
+    element_uplink_ap_mac: str = ""
+    ethernet_overrides: list[DeviceEthernetOverrides] = field(default_factory=list)
+    ethernet_table: list[DeviceEthernetTable] = field(default_factory=list)
+    fan_level: int | None = None
+    flowctrl_enabled: bool = False
+    fw_caps: int = 0
+    gateway_mac: str = ""
+    guest_num_sta: int = 0
+    guest_wlan_num_sta: int = 0
+    guest_token: str = ""
+    has_eth1: bool = False
+    has_fan: bool = False
+    has_speaker: bool = False
+    has_temperature: bool = False
+    hash_id: str = ""
+    hide_ch_width: str = ""
+    hw_caps: int = 0
+    inform_ip: str = ""
+    inform_url: str = ""
+    internet: bool = False
+    isolated: bool = False
+    jumboframe_enabled: bool = False
+    kernel_version: str = ""
+    known_cfgversion: str = ""
+    last_seen: int = 0
+    last_uplink: DeviceLastUplink | None = None
+    lcm_brightness: int = 0
+    lcm_brightness_override: bool = False
+    lcm_idle_timeout_override: bool = False
+    lcm_night_mode_begins: str = ""
+    lcm_night_mode_enabled: bool = False
+    lcm_night_mode_ends: str = ""
+    lcm_tracker_enabled: bool = False
+    led_override: str = ""
+    led_override_color: str = ""
+    led_override_color_brightness: int = 0
+    license_state: str = ""
+    lldp_table: list[DeviceLldpTable] = field(default_factory=list)
+    locating: bool = False
+    mac: str = ""
+    manufacturer_id: int = 0
+    meshv3_peer_mac: str = ""
+    model: str = ""
+    model_in_eol: bool = False
+    model_in_lts: bool = False
+    model_incompatible: bool = False
+    name: str = ""
+    network_table: list[DeviceNetworkTable] = field(default_factory=list)
+    next_heartbeat_at: int = 0
+    next_interval: int = 30
+    num_desktop: int = 0
+    num_handheld: int = 0
+    num_mobile: int = 0
+    num_sta: int = 0
+    outdoor_mode_override: str = ""
+    outlet_ac_power_budget: str = ""
+    outlet_ac_power_consumption: str = ""
+    outlet_enabled: bool = False
+    outlet_overrides: list[DeviceOutletOverrides] = field(default_factory=list)
+    outlet_table: list[Outlet] = field(default_factory=list)
+    overheating: bool = False
+    power_source_ctrl_enabled: bool = False
+    prev_non_busy_state: int = 0
+    provisioned_at: int = 0
+    port_overrides: list[DevicePortOverrides] = field(default_factory=list)
+    radio_table: list[DeviceRadioTable] = field(default_factory=list)
+    radio_table_stats: list[DeviceRadioTableStats] = field(default_factory=list)
+    required_version: str = ""
+    rollupgrade: bool = False
+    rx_bytes: int = 0
+    rx_bytes_d: int = 0
+    satisfaction: int = 0
+    scan_radio_table: list = field(default_factory=list)
+    scanning: bool = False
+    serial: str = ""
+    site_id: str = ""
+    spectrum_scanning: bool = False
+    speedtest_status: DeviceSpeedtestStatus | None = json_field(
+        "speedtest-status", default=None
+    )
+    ssh_session_table: list = field(default_factory=list)
+    start_connected_millis: int = 0
+    start_disconnected_millis: int = 0
+    stat: dict | None = None
+    state: int = 0
+    storage: list[DeviceStorage] | None = None
+    stp_priority: str = ""
+    stp_version: str = ""
+    switch_caps: DeviceSwitchCaps | None = None
+    sys_error_caps: int = 0
+    sys_stats: DeviceSysStats | None = None
+    syslog_key: str = ""
+    system_stats: DeviceSystemStats | None = json_field("system-stats", default=None)
+    temperatures: list[DeviceTemperature] | None = None
+    two_phase_adopt: bool = False
+    tx_bytes: int = 0
+    tx_bytes_d: int = 0
+    type: str = ""
+    unsupported: bool = False
+    unsupported_reason: int = 0
+    upgradable: bool = False
+    upgrade_state: int = 0
+    upgrade_to_firmware: str = ""
+    uplink: DeviceUplink | None = None
+    uplink_depth: int | None = None
+    uplink_table: list = field(default_factory=list)
+    uptime: int = 0
+    uptime_stats: DeviceUptimeStats | None = None
+    user_num_sta: int | None = json_field("user-num_sta", default=None)  # type: ignore
+    user_wlan_num_sta: int = 0
+    usg_caps: int = 0
+    vap_table: list[dict] = field(default_factory=list)
+    version: str = ""
+    vwireEnabled: bool = False
+    vwire_table: list = field(default_factory=list)
+    vwire_vap_table: list = field(default_factory=list)
+    wifi_caps: int = 0
+    wlan_overrides: list[DeviceWlanOverrides] = field(default_factory=list)
+    wlangroup_id_na: str = ""
+    wlangroup_id_ng: str = ""
+    x_aes_gcm: bool = False
+    x_authkey: str = ""
+    x_fingerprint: str = ""
+    x_has_ssh_hostkey: bool = False
+    x_inform_authkey: str = ""
+    x_ssh_hostkey_fingerprint: str = ""
+    x_vwirekey: str = ""
+
+    disabled: bool = False
+    board_revision: int = json_field("board_rev", default=None)  # type: ignore
+    general_temperature: int | None = None
+    ip: str = ""
+    port_table: list[Port] = field(default_factory=list)
+
+    @property
+    def id(self) -> str:
+        """ID of device."""
+        return self.device_id
+
+    @property
+    def supports_led_ring(self) -> bool:
+        """Check if the hardware supports an LED ring based on the second bit of `hw_caps`."""
+        return bool(self.hw_caps & HardwareCapability.LED_RING)
+
+    def __repr__(self) -> str:
+        """Return the representation."""
+        return f"<Device {self.name}: {self.mac}>"
 
 
 class DeviceState(enum.IntEnum):
@@ -663,25 +739,24 @@ class DeviceSetOutletRelayRequest(ApiRequest):
         """
         existing_override = False
         for outlet_override in device.outlet_overrides:
-            if outlet_idx == outlet_override["index"]:
-                outlet_override["relay_state"] = state
+            if outlet_idx == outlet_override.index:
+                outlet_override.relay_state = state
                 existing_override = True
                 break
 
         if not existing_override:
-            name = device.outlet_table[outlet_idx - 1].get("name", "")
+            name = device.outlet_table[outlet_idx - 1].name
             device.outlet_overrides.append(
-                {
-                    "index": outlet_idx,
-                    "name": name,
-                    "relay_state": state,
-                }
+                DeviceOutletOverrides(index=outlet_idx, name=name, relay_state=state)
             )
 
+        outlet_overrides = [
+            outlet_override.to_json() for outlet_override in device.outlet_overrides
+        ]
         return cls(
             method="put",
             path=f"/rest/device/{device.id}",
-            data={"outlet_overrides": device.outlet_overrides},
+            data={"outlet_overrides": outlet_overrides},
         )
 
 
@@ -698,25 +773,24 @@ class DeviceSetOutletCycleEnabledRequest(ApiRequest):
         """
         existing_override = False
         for outlet_override in device.outlet_overrides:
-            if outlet_idx == outlet_override["index"]:
-                outlet_override["cycle_enabled"] = state
+            if outlet_idx == outlet_override.index:
+                outlet_override.cycle_enabled = state
                 existing_override = True
                 break
 
         if not existing_override:
-            name = device.outlet_table[outlet_idx - 1].get("name", "")
+            name = device.outlet_table[outlet_idx - 1].name
             device.outlet_overrides.append(
-                {
-                    "index": outlet_idx,
-                    "name": name,
-                    "cycle_enabled": state,
-                }
+                DeviceOutletOverrides(index=outlet_idx, name=name, cycle_enabled=state)
             )
-
         return cls(
             method="put",
             path=f"/rest/device/{device.id}",
-            data={"outlet_overrides": device.outlet_overrides},
+            data={
+                "outlet_overrides": [
+                    override.to_json() for override in device.outlet_overrides
+                ]
+            },
         )
 
 
@@ -752,23 +826,24 @@ class DeviceSetPoePortModeRequest(ApiRequest):
 
             existing_override = False
             for port_override in port_overrides:
-                if port_idx == port_override.get("port_idx"):
-                    port_override["poe_mode"] = mode
+                if port_idx == port_override.port_idx:
+                    port_override.poe_mode = mode
                     existing_override = True
                     break
 
             if existing_override:
                 continue
 
-            port_override = {"port_idx": port_idx, "poe_mode": mode}
-            if portconf_id := device.port_table[port_idx - 1].get("portconf_id"):
-                port_override["portconf_id"] = portconf_id
+            port_override = DevicePortOverrides(port_idx=port_idx, poe_mode=mode)
+            if portconf_id := device.port_table[port_idx - 1].portconf_id:
+                port_override.portconf_id = portconf_id
             port_overrides.append(port_override)
-
         return cls(
             method="put",
             path=f"/rest/device/{device.id}",
-            data={"port_overrides": port_overrides},
+            data={
+                "port_overrides": [override.to_json() for override in port_overrides]
+            },
         )
 
 
@@ -809,243 +884,3 @@ class DeviceSetLedStatus(ApiRequest):
             path=f"/rest/device/{device.id}",
             data=data,
         )
-
-
-class Device(ApiItem):
-    """Represents a network device."""
-
-    raw: TypedDevice
-
-    @property
-    def board_revision(self) -> int:
-        """Board revision of device."""
-        return self.raw.get("board_rev", 0)
-
-    @property
-    def considered_lost_at(self) -> int:
-        """When device is considered lost."""
-        return self.raw["considered_lost_at"]
-
-    @property
-    def disabled(self) -> bool:
-        """Is device disabled."""
-        return self.raw.get("disabled", False)
-
-    @property
-    def downlink_table(self) -> list[dict[str, Any]]:
-        """All devices with device as uplink."""
-        return self.raw.get("downlink_table", [])
-
-    @property
-    def fan_level(self) -> int | None:
-        """Fan level of device."""
-        return self.raw.get("fan_level")
-
-    @property
-    def general_temperature(self) -> int | None:
-        """General temperature of device."""
-        return self.raw.get("general_temperature")
-
-    @property
-    def has_fan(self) -> bool:
-        """Do device have a fan."""
-        return self.raw.get("has_fan", False)
-
-    @property
-    def has_temperature(self) -> bool:
-        """Do the device have a general temperature."""
-        return self.raw.get("has_temperature", False)
-
-    @property
-    def hw_caps(self) -> int:
-        """Hardware capabilities."""
-        return self.raw.get("hw_caps", 0)
-
-    @property
-    def id(self) -> str:
-        """ID of device."""
-        return self.raw["device_id"]
-
-    @property
-    def ip(self) -> str | None:
-        """IP of device."""
-        return self.raw.get("ip")
-
-    @property
-    def last_seen(self) -> int | None:
-        """When was device last seen."""
-        return self.raw.get("last_seen")
-
-    @property
-    def led_override(self) -> str | None:
-        """LED override."""
-        return self.raw.get("led_override")
-
-    @property
-    def led_override_color(self) -> str | None:
-        """LED override color."""
-        return self.raw.get("led_override_color")
-
-    @property
-    def led_override_color_brightness(self) -> int | None:
-        """LED override color brightness."""
-        return self.raw.get("led_override_color_brightness")
-
-    @property
-    def lldp_table(self) -> list[TypedDeviceLldpTable]:
-        """All clients and devices directly attached to device."""
-        return self.raw.get("lldp_table", [])
-
-    @property
-    def mac(self) -> str:
-        """MAC address of device."""
-        return self.raw["mac"]
-
-    @property
-    def model(self) -> str:
-        """Model of device."""
-        return self.raw["model"]
-
-    @property
-    def name(self) -> str:
-        """Name of device."""
-        return self.raw.get("name", "")
-
-    @property
-    def next_heartbeat_at(self) -> int | None:
-        """Next heart beat full UNIX time."""
-        return self.raw.get("next_heartbeat_at")
-
-    @property
-    def next_interval(self) -> int:
-        """Next heart beat in seconds."""
-        return self.raw.get("next_interval", 30)
-
-    @property
-    def overheating(self) -> bool:
-        """Is device overheating."""
-        return self.raw.get("overheating", False)
-
-    @property
-    def outlet_overrides(self) -> list[TypedDeviceOutletOverrides]:
-        """Overridden outlet configuration."""
-        return self.raw.get("outlet_overrides", [])
-
-    @property
-    def outlet_ac_power_budget(self) -> str | None:
-        """The amount of power available to outlets."""
-        return self.raw.get("outlet_ac_power_budget")
-
-    @property
-    def outlet_ac_power_consumption(self) -> str | None:
-        """The amount of power consumed by all outlets."""
-        return self.raw.get("outlet_ac_power_consumption")
-
-    @property
-    def outlet_table(self) -> list[TypedDeviceOutletTable]:
-        """List of outlets."""
-        return self.raw.get("outlet_table", [])
-
-    @property
-    def port_overrides(self) -> list[TypedDevicePortOverrides]:
-        """Overridden port configuration."""
-        return self.raw.get("port_overrides", [])
-
-    @property
-    def port_table(self) -> list[TypedDevicePortTable]:
-        """List of ports and data."""
-        return self.raw.get("port_table", [])
-
-    @property
-    def speedtest_status(self) -> TypedDeviceSpeedtestStatus | None:
-        """Speedtest status."""
-        if value := self.raw.get("speedtest-status"):
-            return cast(TypedDeviceSpeedtestStatus, value)
-        return None
-
-    @property
-    def state(self) -> DeviceState:
-        """State of device."""
-        return DeviceState(self.raw["state"])
-
-    @property
-    def storage(self) -> list[TypedDeviceStorage] | None:
-        """Device storage information."""
-        return self.raw.get("storage")
-
-    @property
-    def sys_stats(self) -> TypedDeviceSysStats:
-        """Output from top."""
-        return self.raw["sys_stats"]
-
-    @property
-    def system_stats(self) -> tuple[str, str, str]:
-        """System statistics."""
-        data = self.raw["system-stats"]  # type: ignore [typeddict-item]
-        return (data.get("cpu", ""), data.get("mem", ""), data.get("uptime", ""))
-
-    @property
-    def temperatures(self) -> list[TypedDeviceTemperature] | None:
-        """Device temperature sensors."""
-        return self.raw.get("temperatures")
-
-    @property
-    def type(self) -> str:
-        """Type of device."""
-        return self.raw["type"]
-
-    @property
-    def version(self) -> str:
-        """Firmware version."""
-        return self.raw["version"]
-
-    @property
-    def upgradable(self) -> bool:
-        """Is a new firmware available."""
-        return self.raw.get("upgradable", False)
-
-    @property
-    def upgrade_to_firmware(self) -> str:
-        """Firmware version to update to."""
-        return self.raw.get("upgrade_to_firmware", "")
-
-    @property
-    def uplink(self) -> TypedDeviceUplink:
-        """Information about uplink."""
-        return self.raw["uplink"]
-
-    @property
-    def uplink_depth(self) -> int | None:
-        """Hops to gateway."""
-        return self.raw.get("uplink_depth")
-
-    @property
-    def uptime(self) -> int:
-        """Uptime of device."""
-        return self.raw.get("uptime", 0)
-
-    @property
-    def uptime_stats(self) -> TypedDeviceUptimeStats | None:
-        """Uptime statistics."""
-        return self.raw.get("uptime_stats")
-
-    @property
-    def user_num_sta(self) -> int:
-        """Amount of connected clients."""
-        value = self.raw.get("user-num_sta")
-        assert isinstance(value, int)
-        return value
-
-    @property
-    def wlan_overrides(self) -> list[TypedDeviceWlanOverrides]:
-        """Wlan configuration override."""
-        return self.raw.get("wlan_overrides", [])
-
-    @property
-    def supports_led_ring(self) -> bool:
-        """Check if the hardware supports an LED ring based on the second bit of `hw_caps`."""
-        return bool(self.hw_caps & HardwareCapability.LED_RING)
-
-    def __repr__(self) -> str:
-        """Return the representation."""
-        return f"<Device {self.name}: {self.mac}>"

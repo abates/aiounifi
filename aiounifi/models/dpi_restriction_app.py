@@ -1,21 +1,22 @@
 """DPI Restrictions as part of a UniFi network."""
 
 from dataclasses import dataclass
-from typing import Self, TypedDict
+from typing import Self
 
-from .api import ApiItem, ApiRequest
+from .api import ApiItem, ApiRequest, json_field
 
 
-class TypedDPIRestrictionApp(TypedDict):
+@dataclass
+class DPIRestrictionApp(ApiItem):
     """DPI restriction app type definition."""
 
-    _id: str
-    apps: list[str]
-    blocked: bool
-    cats: list[str]
-    enabled: bool
-    log: bool
-    site_id: str
+    id: str = json_field("_id")
+    apps: list[str] | None = None
+    blocked: bool | None = None
+    cats: list[str] | None = None
+    enabled: bool | None = None
+    log: bool | None = None
+    site_id: str | None = None
 
 
 @dataclass
@@ -40,44 +41,3 @@ class DPIRestrictionAppEnableRequest(ApiRequest):
             path=f"/rest/dpiapp/{app_id}",
             data={"enabled": enable},
         )
-
-
-class DPIRestrictionApp(ApiItem):
-    """Represents a DPI App configuration."""
-
-    raw: TypedDPIRestrictionApp
-
-    @property
-    def id(self) -> str:
-        """DPI app ID."""
-        return self.raw["_id"]
-
-    @property
-    def apps(self) -> list[str]:
-        """List of apps."""
-        return self.raw["apps"]
-
-    @property
-    def blocked(self) -> bool:
-        """Is blocked."""
-        return self.raw["blocked"]
-
-    @property
-    def cats(self) -> list[str]:
-        """Categories."""
-        return self.raw["cats"]
-
-    @property
-    def enabled(self) -> bool:
-        """Is enabled."""
-        return self.raw["enabled"]
-
-    @property
-    def log(self) -> bool:
-        """Is logging enabled."""
-        return self.raw["log"]
-
-    @property
-    def site_id(self) -> str:
-        """Site ID."""
-        return self.raw["site_id"]

@@ -1,7 +1,7 @@
 """Setup common test helpers."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Protocol
 from unittest.mock import Mock, patch
 
 import aiohttp
@@ -24,6 +24,12 @@ def aioresponse_fixture() -> aioresponses:
 def is_unifi_os_fixture() -> bool:
     """If use UniFi OS response."""
     return False
+
+
+class UnifiCalledWith(Protocol):
+    """Protocol for typehinting the unifi_called_with fixture."""
+
+    def __call__(self, method: str, path: str, **kwargs: dict[str, Any]) -> bool: ...  # noqa: D102
 
 
 @pytest.fixture
@@ -96,6 +102,7 @@ def _endpoint_fixture(
     device_payload: list[dict[str, Any]],
     dpi_app_payload: list[dict[str, Any]],
     dpi_group_payload: list[dict[str, Any]],
+    network_conf_payload: list[dict[str, Any]],
     port_forward_payload: list[dict[str, Any]],
     site_payload: list[dict[str, Any]],
     system_information_payload: list[dict[str, Any]],
@@ -146,6 +153,11 @@ def _endpoint_fixture(
         "/api/s/default/rest/dpigroup",
         "/proxy/network/api/s/default/rest/dpigroup",
         dpi_group_payload,
+    )
+    mock_get_request(
+        "/api/s/default/rest/networkconf",
+        "/proxy/network/api/s/default/rest/networkconf",
+        network_conf_payload,
     )
     mock_get_request(
         "/api/s/default/rest/portforward",
@@ -218,6 +230,12 @@ def dpi_app_data_fixture() -> list[dict[str, Any]]:
 @pytest.fixture(name="dpi_group_payload")
 def dpi_group_data_fixture() -> list[dict[str, Any]]:
     """DPI group data."""
+    return []
+
+
+@pytest.fixture(name="network_conf_payload")
+def network_conf_data_fixture() -> list[dict[str, Any]]:
+    """Network conf data."""
     return []
 
 

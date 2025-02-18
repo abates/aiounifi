@@ -2,58 +2,58 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TypedDict
+from dataclasses import dataclass, field
 
-from .api import ApiItem, ApiRequest
+from .api import ApiItem, ApiRequest, json_field
 
 
-class TypedSystemInfo(TypedDict):
+@dataclass
+class SystemInformation(ApiItem):
     """System information type definition."""
 
-    anonymous_controller_id: str
-    autobackup: bool
-    build: str
-    console_display_version: str
-    data_retention_days: int
-    data_retention_time_in_hours_for_5minutes_scale: int
-    data_retention_time_in_hours_for_daily_scale: int
-    data_retention_time_in_hours_for_hourly_scale: int
-    data_retention_time_in_hours_for_monthly_scale: int
-    data_retention_time_in_hours_for_others: int
-    debug_device: str
-    debug_mgmt: str
-    debug_sdn: str
-    debug_setting_preference: str
-    debug_system: str
-    default_site_device_auth_password_alert: bool
-    facebook_wifi_registered: bool
-    has_webrtc_support: bool
-    hostname: str
-    https_port: int
-    image_maps_use_google_engine: bool
-    inform_port: int
-    ip_addrs: list[str]
-    is_cloud_console: bool
-    live_chat: str
-    name: str
-    override_inform_host: bool
-    portal_http_port: int
-    previous_version: str
-    radius_disconnect_running: bool
-    sso_app_id: str
-    sso_app_sec: str
-    store_enabled: str
-    timezone: str
-    ubnt_device_type: str
-    udm_version: str
-    unifi_go_enabled: bool
-    unsupported_device_count: int
-    unsupported_device_list: list[str]
-    update_available: bool
-    update_downloaded: bool
-    uptime: int
-    version: str
+    anonymous_controller_id: str | None = None
+    autobackup: bool | None = None
+    build: str | None = None
+    console_display_version: str | None = None
+    data_retention_days: int | None = None
+    data_retention_time_in_hours_for_5minutes_scale: int | None = None
+    data_retention_time_in_hours_for_daily_scale: int | None = None
+    data_retention_time_in_hours_for_hourly_scale: int | None = None
+    data_retention_time_in_hours_for_monthly_scale: int | None = None
+    data_retention_time_in_hours_for_others: int | None = None
+    debug_device: str | None = None
+    debug_mgmt: str | None = None
+    debug_sdn: str | None = None
+    debug_setting_preference: str | None = None
+    debug_system: str | None = None
+    default_site_device_auth_password_alert: bool | None = None
+    device_type: str | None = json_field("ubnt_device_type", default=None)
+    facebook_wifi_registered: bool | None = None
+    has_webrtc_support: bool | None = None
+    hostname: str | None = None
+    https_port: int | None = None
+    image_maps_use_google_engine: bool | None = None
+    inform_port: int | None = None
+    ip_address: list[str] = json_field("ip_addrs", default_factory=list)
+    is_cloud_console: bool | None = None
+    live_chat: str | None = None
+    name: str | None = None
+    override_inform_host: bool | None = None
+    portal_http_port: int | None = None
+    previous_version: str | None = None
+    radius_disconnect_running: bool | None = None
+    sso_app_id: str | None = None
+    sso_app_sec: str | None = None
+    store_enabled: str | None = None
+    timezone: str | None = None
+    udm_version: str | None = None
+    unifi_go_enabled: bool | None = None
+    unsupported_device_count: int | None = None
+    unsupported_device_list: list[str] = field(default_factory=list)
+    update_available: bool | None = None
+    update_downloaded: bool | None = None
+    uptime: int | None = None
+    version: str | None = None
 
 
 @dataclass
@@ -64,59 +64,3 @@ class SystemInformationRequest(ApiRequest):
     def create(cls) -> SystemInformationRequest:
         """Create system information request."""
         return cls(method="get", path="/stat/sysinfo")
-
-
-class SystemInformation(ApiItem):
-    """Represents a client network device."""
-
-    raw: TypedSystemInfo
-
-    @property
-    def anonymous_controller_id(self) -> str:
-        """Anonymous controller ID."""
-        return self.raw["anonymous_controller_id"]
-
-    @property
-    def device_type(self) -> str:
-        """Network host device type."""
-        return self.raw["ubnt_device_type"]
-
-    @property
-    def hostname(self) -> str:
-        """Host name."""
-        return self.raw["hostname"]
-
-    @property
-    def ip_address(self) -> list[str]:
-        """External IP address."""
-        return self.raw["ip_addrs"]
-
-    @property
-    def is_cloud_console(self) -> bool:
-        """Cloud hosted console."""
-        return self.raw["is_cloud_console"]
-
-    @property
-    def name(self) -> str:
-        """Name."""
-        return self.raw["name"]
-
-    @property
-    def previous_version(self) -> str:
-        """Previous application version."""
-        return self.raw["previous_version"]
-
-    @property
-    def update_available(self) -> bool:
-        """Application update available."""
-        return self.raw["update_available"]
-
-    @property
-    def uptime(self) -> int:
-        """Application uptime."""
-        return self.raw["uptime"]
-
-    @property
-    def version(self) -> str:
-        """Current application version."""
-        return self.raw["version"]

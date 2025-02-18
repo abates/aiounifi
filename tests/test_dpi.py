@@ -16,13 +16,15 @@ from aiounifi.models.dpi_restriction_group import DPIRestrictionGroup
 
 from .fixtures import DPI_APPS, DPI_GROUPS
 
+from tests.conftest import UnifiCalledWith
+
 
 @pytest.mark.parametrize("dpi_app_payload", [DPI_APPS])
 @pytest.mark.usefixtures("_mock_endpoints")
 async def test_dpi_apps(
     mock_aioresponse: aioresponses,
     unifi_controller: Controller,
-    unifi_called_with: Callable[[str, str, dict[str, Any]], bool],
+    unifi_called_with: UnifiCalledWith,
 ) -> None:
     """Test that dpi_apps can create an app."""
     dpi_apps = unifi_controller.dpi_apps
@@ -69,7 +71,7 @@ async def test_dpi_groups(unifi_controller: Controller) -> None:
     group: DPIRestrictionGroup = dpi_groups["5f976f4ae3c58f018ec7dff6"]
     assert group.id == "5f976f4ae3c58f018ec7dff6"
     assert not group.attr_no_delete
-    assert group.attr_hidden_id == ""
+    assert group.attr_hidden_id is None
     assert group.name == "No Media"
     assert group.site_id == "5ba29dd4e3c58f026e9d7c38"
     assert group.dpiapp_ids == ["5f976f62e3c58f018ec7e17d"]

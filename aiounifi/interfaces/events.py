@@ -53,7 +53,7 @@ class EventHandler:
 
     def handler(self, message: Message) -> None:
         """Receive event from message handler and identifies where the event belong."""
-        event = Event(message.data)
+        event = Event.from_json(message.data)
 
         for callback, event_filter in self._subscribers:
             if event_filter is not None and event.key not in event_filter:

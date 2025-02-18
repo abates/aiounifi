@@ -1,9 +1,11 @@
 """Test port forwarding API."""
 
+from typing import Any
+
 import pytest
 
 from aiounifi.controller import Controller
-from aiounifi.models.port_forward import PortForwardEnableRequest, TypedPortForward
+from aiounifi.models.port_forward import PortForwardEnableRequest
 
 from .fixtures import PORT_FORWARDING
 
@@ -38,7 +40,7 @@ async def test_port_forward(
         payload={},
     )
 
-    expected: TypedPortForward = PORT_FORWARDING["data"][0].copy()
+    expected: dict[str, Any] = PORT_FORWARDING["data"][0].copy()
     expected["enabled"] = False
 
     await unifi_controller.request(PortForwardEnableRequest.create(port_forward, False))

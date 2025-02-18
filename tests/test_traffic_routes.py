@@ -11,6 +11,7 @@ from aiounifi.models.traffic_route import (
     Domain,
     IPAddress,
     MatchingTarget,
+    TargetDevice,
     TrafficRouteSaveRequest,
 )
 
@@ -163,7 +164,7 @@ async def test_traffic_routes(unifi_controller, unifi_called_with):
     assert traffic_route.next_hop == ""
     assert traffic_route.regions == []
     assert traffic_route.target_devices == [
-        {"network_id": WIRELESS_CLIENT["network_id"], "type": "NETWORK"},
+        TargetDevice(network_id=WIRELESS_CLIENT["network_id"], type="NETWORK"),
     ]
 
     traffic_route = traffic_routes["655565af1e1c2754a39388a4"]
@@ -178,7 +179,7 @@ async def test_traffic_routes(unifi_controller, unifi_called_with):
     assert traffic_route.next_hop == ""
     assert traffic_route.regions == []
     assert traffic_route.target_devices == [
-        {"network_id": WIRELESS_CLIENT["network_id"], "type": "NETWORK"},
+        TargetDevice(network_id=WIRELESS_CLIENT["network_id"], type="NETWORK"),
     ]
 
     traffic_route = traffic_routes["655566f91e1c2754a393892c"]
@@ -195,5 +196,5 @@ async def test_traffic_routes(unifi_controller, unifi_called_with):
     assert traffic_route.next_hop == ""
     assert traffic_route.regions == []
     assert traffic_route.target_devices == [
-        {"network_id": WIRELESS_CLIENT["network_id"], "type": "NETWORK"},
+        TargetDevice(network_id=WIRELESS_CLIENT["network_id"], type="NETWORK"),
     ]

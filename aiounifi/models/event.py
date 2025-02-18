@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import enum
 import logging
-from typing import TypedDict, final
 
 from .api import ApiItem
 
@@ -115,52 +115,43 @@ class EventKey(enum.Enum):
         return EventKey.UNKNOWN
 
 
-class TypedEvent(TypedDict):
+@dataclass
+class Event(ApiItem):
     """Event type definition."""
 
-    _id: str
-    ap: str
-    bytes: int
-    channel: int
-    client: str
-    datetime: str
-    duration: int
-    guest: str
-    gw: str
-    hostname: str
-    key: str
-    msg: str
-    network: str
-    radio: str
-    site_id: str
-    ssid: str
-    sw: str
-    sw_name: str
-    subsystem: str
-    time: int
-    user: str
-    version_from: str
-    version_to: str
-
-
-@final
-class Event(ApiItem):
-    """UniFi event."""
-
-    raw: TypedEvent
+    _id: str | None = None
+    ap: str = ""
+    bytes: int = 0
+    channel: int = 0
+    client: str | None = None
+    datetime: str | None = None
+    duration: int = 0
+    guest: str | None = None
+    gw: str | None = None
+    hostname: str = ""
+    key: EventKey | None = None
+    msg: str | None = None
+    network: str | None = None
+    radio: str = ""
+    site_id: str = ""
+    ssid: str = ""
+    sw: str | None = None
+    sw_name: str | None = None
+    subsystem: str = ""
+    time: int | None = None
+    user: str | None = None
+    version_from: str = ""
+    version_to: str = ""
 
     @property
-    def datetime(self) -> str:
-        """Datetime of event '2020-03-01T15:35:08Z'."""
-        return self.raw["datetime"]
+    def client_mac(self) -> str:
+        """MAC address of client."""
+        return self.user or self.client or self.guest or ""
 
     @property
-    def key(self) -> EventKey:
-        """Event key e.g. 'EVT_WU_Disconnected'."""
-        key = EventKey(self.raw["key"])
-        if key == EventKey.UNKNOWN:
-            LOGGER.warning("Unsupported event %s", self.raw)
-        return key
+    def device(self) -> str:
+        """MAC address of device."""
+        return self.ap or self.gw or self.sw or ""
 
     @property
     def event(self) -> str:
@@ -168,93 +159,13 @@ class Event(ApiItem):
 
         To be removed.
         """
-        return self.raw["key"]
-
-    @property
-    def msg(self) -> str:
-        """Event message."""
-        return self.raw["msg"]
-
-    @property
-    def time(self) -> int:
-        """Time of event 1583076908000."""
-        return self.raw["time"]
+        return self.key.value if self.key else None
 
     @property
     def mac(self) -> str:
         """MAC of client or device."""
-        if self.client:
-            return self.client
+        if self.client_mac:
+            return self.client_mac
         if self.device:
             return self.device
         return ""
-
-    @property
-    def ap(self) -> str:
-        """Access point connected to."""
-        return self.raw.get("ap", "")
-
-    @property
-    def bytes(self) -> int:
-        """Bytes of data consumed."""
-        return self.raw.get("bytes", 0)
-
-    @property
-    def channel(self) -> int:
-        """Wi-Fi channel."""
-        return self.raw.get("channel", 0)
-
-    @property
-    def client(self) -> str:
-        """MAC address of client."""
-        return (
-            self.raw.get("user")
-            or self.raw.get("client")
-            or self.raw.get("guest")
-            or ""
-        )
-
-    @property
-    def device(self) -> str:
-        """MAC address of device."""
-        return self.raw.get("ap") or self.raw.get("gw") or self.raw.get("sw") or ""
-
-    @property
-    def duration(self) -> int:
-        """Duration."""
-        return self.raw.get("duration", 0)
-
-    @property
-    def hostname(self) -> str:
-        """Nice name."""
-        return self.raw.get("hostname", "")
-
-    @property
-    def radio(self) -> str:
-        """Radio."""
-        return self.raw.get("radio", "")
-
-    @property
-    def subsystem(self) -> str:
-        """Subsystem like 'lan' or 'wlan'."""
-        return self.raw.get("subsystem", "")
-
-    @property
-    def site_id(self) -> str:
-        """Site ID."""
-        return self.raw.get("site_id", "")
-
-    @property
-    def ssid(self) -> str:
-        """SSID."""
-        return self.raw.get("ssid", "")
-
-    @property
-    def version_from(self) -> str:
-        """Version from."""
-        return self.raw.get("version_from", "")
-
-    @property
-    def version_to(self) -> str:
-        """Version to."""
-        return self.raw.get("version_to", "")

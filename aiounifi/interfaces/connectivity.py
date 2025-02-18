@@ -22,7 +22,7 @@ from ..errors import (
     ServiceUnavailable,
     WebsocketError,
 )
-from ..models.api import ERRORS
+from ..models.api import ERRORS, ApiResponse
 from ..models.configuration import Configuration
 
 if "partitioned" not in cookies.Morsel._reserved:  # type: ignore[attr-defined]
@@ -31,7 +31,7 @@ if "partitioned" not in cookies.Morsel._reserved:  # type: ignore[attr-defined]
     cookies.Morsel._flags.add("partitioned")  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
-    from ..models.api import ApiRequest, TypedApiResponse
+    from ..models.api import ApiRequest
 
 LOGGER = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class Connectivity:
             LOGGER.debug("Login Failed not JSON: '%s'", bytes_data)
             raise RequestError("Login Failed: Host starting up")
 
-        data: TypedApiResponse = orjson.loads(bytes_data)
+        data: ApiResponse = orjson.loads(bytes_data)
         if data.get("meta", {}).get("rc") == "error":
             LOGGER.error("Login failed '%s'", data)
             raise ERRORS.get(data["meta"]["msg"], AiounifiException)
@@ -91,12 +91,12 @@ class Connectivity:
         self.can_retry_login = True
         LOGGER.debug("Logged in to UniFi %s", url)
 
-    async def request(self, api_request: ApiRequest) -> TypedApiResponse:
+    async def request(self, api_request: ApiRequest) -> ApiResponse:
         """Make a request to the API, retry login on failure."""
         url = self.config.url + api_request.full_path(
             self.config.site, self.is_unifi_os
         )
-        data: TypedApiResponse = {}
+        data: ApiResponse = None
 
         try:
             response, bytes_data = await self._request(

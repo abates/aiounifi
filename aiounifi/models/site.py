@@ -1,20 +1,21 @@
 """Site is a specific grouping in a UniFi network."""
 
 from dataclasses import dataclass
-from typing import Self, TypedDict
+from typing import Self
 
-from .api import ApiItem, ApiRequest
+from .api import ApiItem, ApiRequest, json_field
 
 
-class TypedSite(TypedDict):
+@dataclass
+class Site(ApiItem):
     """Site description."""
 
-    _id: str
-    attr_hidden_id: str
-    attr_no_delete: bool
-    desc: str
-    name: str
-    role: str
+    site_id: str | None = json_field("_id", default=None)
+    description: str | None = json_field("desc", default=None)
+    hidden_id: str | None = json_field("attr_hidden_id", default=None)
+    name: str | None = None
+    no_delete: bool | None = json_field("attr_no_delete", default=None)
+    role: str | None = None
 
 
 @dataclass
@@ -31,39 +32,3 @@ class SiteListRequest(ApiRequest):
         if is_unifi_os:
             return f"/proxy/network/api{self.path}"
         return f"/api{self.path}"
-
-
-class Site(ApiItem):
-    """Represents a network device."""
-
-    raw: TypedSite
-
-    @property
-    def site_id(self) -> str:
-        """Site ID."""
-        return self.raw["_id"]
-
-    @property
-    def description(self) -> str:
-        """Site description."""
-        return self.raw["desc"]
-
-    @property
-    def hidden_id(self) -> str:
-        """Unknown."""
-        return self.raw["attr_hidden_id"]
-
-    @property
-    def name(self) -> str:
-        """Site name."""
-        return self.raw["name"]
-
-    @property
-    def no_delete(self) -> bool:
-        """Can not delete site."""
-        return self.raw["attr_no_delete"]
-
-    @property
-    def role(self) -> str:
-        """User role."""
-        return self.raw["role"]

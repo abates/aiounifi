@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..models.port import Port
+from ..models.device import Port
 from .api_handlers import APIHandler, ItemEvent
 
 if TYPE_CHECKING:
@@ -25,20 +25,14 @@ class Ports(APIHandler[Port]):
         """Add, update, remove."""
         if event in (ItemEvent.ADDED, ItemEvent.CHANGED):
             device = self.controller.devices[device_id]
-            if "port_table" not in device.raw:
-                return
-            for raw_port in device.raw["port_table"]:
-                port = Port(raw_port)
+            for port in device.port_table:
                 if (port_idx := port.port_idx or port.ifname) is None:
                     continue
                 obj_id = f"{device_id}_{port_idx}"
-                self._items[obj_id] = port
+                self[obj_id] = port
                 self.signal_subscribers(event, obj_id)
             return
 
-        matched_obj_ids = [
-            obj_id for obj_id in self._items if obj_id.startswith(device_id)
-        ]
+        matched_obj_ids = [obj_id for obj_id in self if obj_id.startswith(device_id)]
         for obj_id in matched_obj_ids:
-            self._items.pop(obj_id)
-            self.signal_subscribers(event, obj_id)
+            self.pop(obj_id)
