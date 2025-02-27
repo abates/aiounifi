@@ -12,4 +12,4 @@ class PortForwarding(APIHandler[PortForward]):
     item_cls = PortForward
     process_messages = (MessageKey.PORT_FORWARD_ADDED, MessageKey.PORT_FORWARD_UPDATED)
     remove_messages = (MessageKey.PORT_FORWARD_DELETED,)
-    api_request = PortForwardListRequest.create()
+    api_request = PortForwardListRequest()

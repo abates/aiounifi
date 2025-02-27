@@ -12,19 +12,15 @@ class Wlans(APIHandler[Wlan]):
     obj_id_key = "_id"
     item_cls = Wlan
     process_messages = (MessageKey.WLAN_CONF_UPDATED,)
-    api_request = WlanListRequest.create()
+    api_request = WlanListRequest()
 
     async def enable(self, wlan: Wlan) -> ApiResponse:
         """Block client from controller."""
-        return await self.controller.request(
-            WlanEnableRequest.create(wlan.id, enable=True)
-        )
+        return await self.controller.request(WlanEnableRequest(wlan.id, enable=True))
 
     async def disable(self, wlan: Wlan) -> ApiResponse:
         """Unblock client from controller."""
-        return await self.controller.request(
-            WlanEnableRequest.create(wlan.id, enable=False)
-        )
+        return await self.controller.request(WlanEnableRequest(wlan.id, enable=False))
 
     def generate_wlan_qr_code(self, wlan: Wlan) -> bytes:
         """Generate QR code based on WLAN properties."""

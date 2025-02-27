@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import Self
 
 from .api import ApiItem, ApiRequest, json_field
 
@@ -20,7 +19,6 @@ class VoucherStatus(StrEnum):
 class Voucher(ApiItem):
     """Voucher type definition."""
 
-    id: str = json_field("_id")
     site_id: str
     quota: int
     used: int
@@ -30,6 +28,7 @@ class Voucher(ApiItem):
     voucher_duration: float = json_field("duration")
     voucher_status_expires: float = json_field("status_expires")
 
+    id: str = json_field("_id")
     note: str = ""
     qos_overwrite: bool | None = None
     qos_usage_quota: int = 0
@@ -86,10 +85,9 @@ class Voucher(ApiItem):
 class VoucherListRequest(ApiRequest):
     """Request object for voucher list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create voucher list request."""
-        return cls(
+        super().__init__(
             method="get",
             path="/stat/voucher",
         )
@@ -99,9 +97,8 @@ class VoucherListRequest(ApiRequest):
 class VoucherCreateRequest(ApiRequest):
     """Request object for voucher create."""
 
-    @classmethod
-    def create(
-        cls,
+    def __init__(
+        self,
         expire_number: int,
         expire_unit: int = 1,
         number: int = 1,
@@ -110,7 +107,7 @@ class VoucherCreateRequest(ApiRequest):
         rate_max_up: int | None = None,
         rate_max_down: int | None = None,
         note: str | None = None,
-    ) -> Self:
+    ):
         """Create voucher create request.
 
         :param expire_number: expiration of voucher per expire_unit
@@ -138,7 +135,7 @@ class VoucherCreateRequest(ApiRequest):
         if note:
             data["note"] = note
 
-        return cls(
+        super().__init__(
             method="post",
             path="/cmd/hotspot",
             data=data,
@@ -149,17 +146,16 @@ class VoucherCreateRequest(ApiRequest):
 class VoucherDeleteRequest(ApiRequest):
     """Request object for voucher delete."""
 
-    @classmethod
-    def create(
-        cls,
+    def __init__(
+        self,
         obj_id: str,
-    ) -> Self:
+    ):
         """Create voucher delete request."""
         data = {
             "cmd": "delete-voucher",
             "_id": obj_id,
         }
-        return cls(
+        super().__init__(
             method="post",
             path="/cmd/hotspot",
             data=data,

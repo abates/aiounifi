@@ -9,4 +9,4 @@ class SystemInformationHandler(APIHandler[SystemInformation]):
 
     obj_id_key = "anonymous_controller_id"
     item_cls = SystemInformation
-    api_request = SystemInformationRequest.create()
+    api_request = SystemInformationRequest()

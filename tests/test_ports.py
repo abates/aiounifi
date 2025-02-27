@@ -64,7 +64,9 @@ async def test_handler_ports(unifi_controller):
     mock_subscribe_bad.assert_not_called()
 
     # Remove ports
-    unifi_controller.devices.remove_item(SWITCH_16_PORT_POE)
+    unifi_controller.devices.pop(
+        SWITCH_16_PORT_POE[unifi_controller.devices.obj_id_key]
+    )
     assert len(ports.values()) == 0
     assert mock_subscribe_all.call_count == 54
     mock_subscribe_all.assert_called_with(ItemEvent.DELETED, "fc:ec:da:11:22:33_18")

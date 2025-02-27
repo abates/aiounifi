@@ -1,7 +1,6 @@
 """DPI Restrictions as part of a UniFi network."""
 
 from dataclasses import dataclass
-from typing import Self
 
 from .api import ApiItem, ApiRequest, json_field
 
@@ -23,20 +22,18 @@ class DPIRestrictionApp(ApiItem):
 class DpiRestrictionAppListRequest(ApiRequest):
     """Request object for DPI restriction app list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create DPI restriction app list request."""
-        return cls(method="get", path="/rest/dpiapp")
+        super().__init__(method="get", path="/rest/dpiapp")
 
 
 @dataclass
 class DPIRestrictionAppEnableRequest(ApiRequest):
     """Request object for enabling DPI Restriction App."""
 
-    @classmethod
-    def create(cls, app_id: str, enable: bool) -> Self:
+    def __init__(self, app_id: str, enable: bool):
         """Create enabling DPI Restriction App request."""
-        return cls(
+        super().__init__(
             method="put",
             path=f"/rest/dpiapp/{app_id}",
             data={"enabled": enable},

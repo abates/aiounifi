@@ -17,7 +17,7 @@ async def test_voucher_create(mock_aioresponse, unifi_controller, unifi_called_w
     mock_aioresponse.post("https://host:8443/api/s/default/cmd/hotspot", payload={})
 
     await unifi_controller.request(
-        VoucherCreateRequest.create(
+        VoucherCreateRequest(
             number=1,
             quota=0,
             expire_number=3600,
@@ -50,9 +50,7 @@ async def test_voucher_delete(mock_aioresponse, unifi_controller, unifi_called_w
     """Test create voucher."""
     mock_aioresponse.post("https://host:8443/api/s/default/cmd/hotspot", payload={})
 
-    await unifi_controller.request(
-        VoucherDeleteRequest.create("657e370a4543a555901865c7")
-    )
+    await unifi_controller.request(VoucherDeleteRequest("657e370a4543a555901865c7"))
 
     assert unifi_called_with(
         "post",

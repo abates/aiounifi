@@ -15,4 +15,4 @@ class DPIRestrictionGroups(APIHandler[DPIRestrictionGroup]):
     item_cls = DPIRestrictionGroup
     process_messages = (MessageKey.DPI_GROUP_ADDED, MessageKey.DPI_GROUP_UPDATED)
     remove_messages = (MessageKey.DPI_GROUP_REMOVED,)
-    api_request = DpiRestrictionGroupListRequest.create()
+    api_request = DpiRestrictionGroupListRequest()

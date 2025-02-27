@@ -9,4 +9,4 @@ class Sites(APIHandler[Site]):
 
     obj_id_key = "_id"
     item_cls = Site
-    api_request = SiteListRequest.create()
+    api_request = SiteListRequest()

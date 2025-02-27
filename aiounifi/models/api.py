@@ -49,13 +49,12 @@ class ApiRequest:
 
     def decode(self, raw: bytes) -> ApiResponse:
         """Put data, received from the unifi controller, into a TypedApiResponse."""
-        data: ApiResponse = orjson.loads(raw)
+        data: dict[str, Any] = orjson.loads(raw)
 
         if "meta" in data and data["meta"]["rc"] == "error":
             raise ERRORS.get(data["meta"]["msg"], AiounifiException)(data)
 
-        data = ApiResponse(**data)
-        return data
+        return ApiResponse(**data)
 
 
 @dataclass
@@ -101,15 +100,13 @@ class FieldProcessor(Protocol):
     def __call__(self, kwargs: dict[str, Any]) -> None: ...  # noqa: D102
 
 
-T = TypeVar("T", bound="ApiItem")
+ApiItem_T = TypeVar("ApiItem_T", bound="ApiItem")
 
 
 class ApiItem(ABC):
     """Base class for all end points using APIItems class."""
 
-    def __init__(self, raw: Any) -> None:
-        """Initialize API item."""
-        self.raw = raw
+    raw: dict[str, Any]
 
     @classmethod
     def _api_item_annotations(cls) -> dict[str, FieldProcessor]:
@@ -171,7 +168,7 @@ class ApiItem(ABC):
         return process_default
 
     @classmethod
-    def from_json(cls, data: dict[str, Any]) -> "T":
+    def from_json(cls, data: dict[str, Any]) -> "ApiItem_T":  # type: ignore
         """Process an object reveived as JSON and create the appro  ate ApiItem instance.
 
         If the ApiItem subclass is a dataclass then the data dictionary is processed
@@ -205,12 +202,12 @@ class ApiItem(ABC):
                     continue
 
                 cls._api_item_annotations()[field.name](kwargs)
-            instance = cls(**kwargs)
+            instance = cls(**kwargs)  # type: ignore
             instance.raw = data
-            return instance
-        return cls(data)
+            return instance  # type: ignore
+        return cls(data)  # type: ignore
 
-    def to_json(self):
+    def to_json(self) -> dict[str, Any]:
         """Generate a dictionary suitable for marshaling to JSON.
 
         If the ApiItem is a dataclass, then this method will construct a dictionary
@@ -222,16 +219,23 @@ class ApiItem(ABC):
             dict[str, Any]: A dictionary that can be serialized as json
 
         """
-        if is_dataclass(self):
-            data = {}
-            for field in fields(self):
-                value = getattr(self, field.name)
-                if isinstance(value, ApiItem):
-                    data[field.name] = value.to_json()
-                elif value is not None:
-                    data[field.name] = value
-            return data
-        return self
+        data = {}
+        for item_field in fields(self):  # type: ignore
+            value = getattr(self, item_field.name)
+            field_name = item_field.name
+            if json_name := item_field.metadata.get("json"):
+                field_name = json_name
+            if isinstance(value, ApiItem):
+                data[field_name] = value.to_json()
+            elif (
+                isinstance(value, list)
+                and len(value) > 0
+                and isinstance(value[0], ApiItem)
+            ):
+                data[field_name] = [item.to_json() for item in value]
+            elif value is not None:
+                data[field_name] = value
+        return data
 
 
 def json_field(json_key: str, **kwargs):

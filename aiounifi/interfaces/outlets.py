@@ -28,7 +28,6 @@ class Outlets(APIHandler[Outlet]):
             for outlet in device.outlet_table:
                 obj_id = f"{device_id}_{outlet.index}"
                 self[obj_id] = outlet
-                self.signal_subscribers(event, obj_id)
             return
 
         matched_obj_ids = [obj_id for obj_id in self if obj_id.startswith(device_id)]

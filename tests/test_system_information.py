@@ -11,7 +11,7 @@ from .fixtures import SYSTEM_INFORMATION
 async def test_sys_info_request(mock_aioresponse, unifi_controller, unifi_called_with):
     """Test power cycle port work."""
     mock_aioresponse.get("https://host:8443/api/s/default/stat/sysinfo", payload={})
-    await unifi_controller.request(SystemInformationRequest.create())
+    await unifi_controller.request(SystemInformationRequest())
     assert unifi_called_with("get", "/api/s/default/stat/sysinfo")
 
 

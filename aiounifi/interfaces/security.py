@@ -18,16 +18,16 @@ class FirewallAddressGroups(APIHandler[FirewallAddressGroup]):
     obj_id_key = "_id"
     item_cls = FirewallAddressGroup
     process_messages = (MessageKey.FIREWALL_ADDRESS_GROUP_UPDATED,)
-    api_request = FirewallAddressGroupRequest.create()
+    api_request = FirewallAddressGroupRequest()
 
 
 class FirewallPortGroups(APIHandler[FirewallPortGroup]):
     """Represents firewall port groups."""
 
     obj_id_key = "_id"
-    item_cls = FirewallAddressGroup
+    item_cls = FirewallPortGroup
     process_messages = (MessageKey.FIREWALL_PORT_GROUP_UPDATED,)
-    api_request = FirewallPortGroupRequest.create()
+    api_request = FirewallPortGroupRequest()
 
 
 class FirewallRules(APIHandler[FirewallRule]):
@@ -36,4 +36,4 @@ class FirewallRules(APIHandler[FirewallRule]):
     obj_id_key = "_id"
     item_cls = FirewallRule
     process_messages = (MessageKey.FIREWALL_RULE_UPDATED,)
-    api_request = FirewallRuleRequest.create()
+    api_request = FirewallRuleRequest()

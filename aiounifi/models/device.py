@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 import enum
 import logging
 import re
-from typing import Self
 
 from .api import ApiItem, ApiRequest, json_field
 
@@ -593,7 +592,7 @@ class Device(ApiItem):
     usg_caps: int = 0
     vap_table: list[dict] = field(default_factory=list)
     version: str = ""
-    vwireEnabled: bool = False
+    vwire_enabled: bool = json_field("vwireEnabled", default=False)
     vwire_table: list = field(default_factory=list)
     vwire_vap_table: list = field(default_factory=list)
     wifi_caps: int = 0
@@ -664,20 +663,18 @@ class HardwareCapability(enum.IntFlag):
 class DeviceListRequest(ApiRequest):
     """Request object for device list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create device list request."""
-        return cls(method="get", path="/stat/device")
+        super().__init__(method="get", path="/stat/device")
 
 
 @dataclass
 class DevicePowerCyclePortRequest(ApiRequest):
     """Request object for power cycle PoE port."""
 
-    @classmethod
-    def create(cls, mac: str, port_idx: int) -> Self:
+    def __init__(self, mac: str, port_idx: int):
         """Create power cycle of PoE request."""
-        return cls(
+        super().__init__(
             method="post",
             path="/cmd/devmgr",
             data={
@@ -692,13 +689,12 @@ class DevicePowerCyclePortRequest(ApiRequest):
 class DeviceRestartRequest(ApiRequest):
     """Request object for device restart."""
 
-    @classmethod
-    def create(cls, mac: str, soft: bool = True) -> Self:
+    def __init__(self, mac: str, soft: bool = True):
         """Create device restart request.
 
         Hard is specifically for PoE switches and will additionally cycle PoE ports.
         """
-        return cls(
+        super().__init__(
             method="post",
             path="/cmd/devmgr",
             data={
@@ -713,10 +709,9 @@ class DeviceRestartRequest(ApiRequest):
 class DeviceUpgradeRequest(ApiRequest):
     """Request object for device upgrade."""
 
-    @classmethod
-    def create(cls, mac: str) -> Self:
+    def __init__(self, mac: str):
         """Create device upgrade request."""
-        return cls(
+        super().__init__(
             method="post",
             path="/cmd/devmgr",
             data={
@@ -730,8 +725,7 @@ class DeviceUpgradeRequest(ApiRequest):
 class DeviceSetOutletRelayRequest(ApiRequest):
     """Request object for outlet relay state."""
 
-    @classmethod
-    def create(cls, device: Device, outlet_idx: int, state: bool) -> Self:
+    def __init__(self, device: Device, outlet_idx: int, state: bool):
         """Create device outlet relay state request.
 
         True:  outlet power output on.
@@ -753,7 +747,7 @@ class DeviceSetOutletRelayRequest(ApiRequest):
         outlet_overrides = [
             outlet_override.to_json() for outlet_override in device.outlet_overrides
         ]
-        return cls(
+        super().__init__(
             method="put",
             path=f"/rest/device/{device.id}",
             data={"outlet_overrides": outlet_overrides},
@@ -764,8 +758,7 @@ class DeviceSetOutletRelayRequest(ApiRequest):
 class DeviceSetOutletCycleEnabledRequest(ApiRequest):
     """Request object for outlet cycle_enabled flag."""
 
-    @classmethod
-    def create(cls, device: Device, outlet_idx: int, state: bool) -> Self:
+    def __init__(self, device: Device, outlet_idx: int, state: bool):
         """Create device outlet outlet cycle_enabled flag request.
 
         True:  UniFi Network will power cycle this outlet if the internet goes down.
@@ -783,7 +776,7 @@ class DeviceSetOutletCycleEnabledRequest(ApiRequest):
             device.outlet_overrides.append(
                 DeviceOutletOverrides(index=outlet_idx, name=name, cycle_enabled=state)
             )
-        return cls(
+        super().__init__(
             method="put",
             path=f"/rest/device/{device.id}",
             data={
@@ -798,14 +791,13 @@ class DeviceSetOutletCycleEnabledRequest(ApiRequest):
 class DeviceSetPoePortModeRequest(ApiRequest):
     """Request object for setting port PoE mode."""
 
-    @classmethod
-    def create(
-        cls,
+    def __init__(
+        self,
         device: Device,
         port_idx: int | None = None,
         mode: str | None = None,
         targets: list[tuple[int, str]] | None = None,
-    ) -> Self:
+    ):
         """Create device set port PoE mode request.
 
         Auto, 24v, passthrough, off.
@@ -838,7 +830,7 @@ class DeviceSetPoePortModeRequest(ApiRequest):
             if portconf_id := device.port_table[port_idx - 1].portconf_id:
                 port_override.portconf_id = portconf_id
             port_overrides.append(port_override)
-        return cls(
+        super().__init__(
             method="put",
             path=f"/rest/device/{device.id}",
             data={
@@ -851,14 +843,13 @@ class DeviceSetPoePortModeRequest(ApiRequest):
 class DeviceSetLedStatus(ApiRequest):
     """Request object for setting LED status of device."""
 
-    @classmethod
-    def create(
-        cls,
+    def __init__(
+        self,
         device: Device,
         status: str = "on",
         brightness: int | None = None,
         color: str | None = None,
-    ) -> Self:
+    ):
         """Set LED status of device."""
 
         data: dict[str, int | str] = {"led_override": status}
@@ -879,7 +870,7 @@ class DeviceSetLedStatus(ApiRequest):
                     )
                 data["led_override_color"] = color
 
-        return cls(
+        super().__init__(
             method="put",
             path=f"/rest/device/{device.id}",
             data=data,

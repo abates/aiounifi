@@ -1,7 +1,6 @@
 """Traffic rules as part of a UniFi network."""
 
 from dataclasses import dataclass
-from typing import Self
 
 from aiounifi.models.traffic import IPAddress, IPRange, TargetDevice
 
@@ -35,42 +34,41 @@ class TrafficRule(ApiItem):
     """Traffic rule type definition."""
 
     id: str = json_field("_id")
-    action: str
-    app_category_ids: list[str]
-    app_ids: list[str]
-    bandwidth_limit: BandwidthLimit
-    description: str
-    domains: list[str]
-    enabled: bool
-    ip_addresses: list[IPAddress]
-    ip_ranges: list[IPRange]
-    matching_target: str
-    network_ids: list[str]
-    regions: list[str]
-    schedule: Schedule
-    target_devices: list[TargetDevice]
+    action: str | None = None
+    app_category_ids: list[str] | None = None
+    app_ids: list[str] | None = None
+    bandwidth_limit: BandwidthLimit | None = None
+    description: str | None = None
+    domains: list[str] | None = None
+    enabled: bool | None = None
+    ip_addresses: list[IPAddress] | None = None
+    ip_ranges: list[IPRange] | None = None
+    matching_target: str | None = None
+    network_ids: list[str] | None = None
+    regions: list[str] | None = None
+    schedule: Schedule | None = None
+    target_devices: list[TargetDevice] | None = None
 
 
 @dataclass
 class TrafficRuleListRequest(ApiRequestV2):
     """Request object for traffic rule list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create traffic rule request."""
-        return cls(method="get", path="/trafficrules", data=None)
+        super().__init__(method="get", path="/trafficrules", data=None)
 
 
 @dataclass
 class TrafficRuleEnableRequest(ApiRequestV2):
     """Request object for traffic rule enable."""
 
-    @classmethod
-    def create(cls, traffic_rule: TrafficRule, enable: bool) -> Self:
+    def __init__(self, traffic_rule: TrafficRule, enable: bool):
         """Create traffic rule enable request."""
-        traffic_rule["enabled"] = enable
-        return cls(
+        data = traffic_rule.to_json()
+        data["enabled"] = enable
+        super().__init__(
             method="put",
-            path=f"/trafficrules/{traffic_rule['_id']}",
-            data=traffic_rule,
+            path=f"/trafficrules/{traffic_rule.id}",
+            data=data,
         )

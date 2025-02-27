@@ -60,7 +60,6 @@ class SystemInformation(ApiItem):
 class SystemInformationRequest(ApiRequest):
     """Request object for system information."""
 
-    @classmethod
-    def create(cls) -> SystemInformationRequest:
+    def __init__(self):
         """Create system information request."""
-        return cls(method="get", path="/stat/sysinfo")
+        super().__init__(method="get", path="/stat/sysinfo")

@@ -19,22 +19,20 @@ class Clients(APIHandler[Client]):
     item_cls = Client
     process_messages = (MessageKey.CLIENT,)
     remove_messages = (MessageKey.CLIENT_REMOVED,)
-    api_request = ClientListRequest.create()
+    api_request = ClientListRequest()
 
     async def block(self, mac: str) -> ApiResponse:
         """Block client from controller."""
-        return await self.controller.request(ClientBlockRequest.create(mac, block=True))
+        return await self.controller.request(ClientBlockRequest(mac, block=True))
 
     async def unblock(self, mac: str) -> ApiResponse:
         """Unblock client from controller."""
-        return await self.controller.request(
-            ClientBlockRequest.create(mac, block=False)
-        )
+        return await self.controller.request(ClientBlockRequest(mac, block=False))
 
     async def reconnect(self, mac: str) -> ApiResponse:
         """Force a wireless client to reconnect to the network."""
-        return await self.controller.request(ClientReconnectRequest.create(mac))
+        return await self.controller.request(ClientReconnectRequest(mac))
 
     async def remove_clients(self, macs: list[str]) -> ApiResponse:
         """Make controller forget provided clients."""
-        return await self.controller.request(ClientRemoveRequest.create(macs))
+        return await self.controller.request(ClientRemoveRequest(macs))

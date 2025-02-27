@@ -15,12 +15,12 @@ class Vouchers(APIHandler[Voucher]):
 
     obj_id_key = "_id"
     item_cls = Voucher
-    api_request = VoucherListRequest.create()
+    api_request = VoucherListRequest()
 
     async def create(self, voucher: Voucher) -> ApiResponse:
         """Create voucher on controller."""
         return await self.controller.request(
-            VoucherCreateRequest.create(
+            VoucherCreateRequest(
                 quota=voucher.quota,
                 expire_number=int(
                     voucher.duration.total_seconds() / 60  # Get minutes.
@@ -35,7 +35,7 @@ class Vouchers(APIHandler[Voucher]):
     async def delete(self, voucher: Voucher) -> ApiResponse:
         """Delete voucher from controller."""
         return await self.controller.request(
-            VoucherDeleteRequest.create(
+            VoucherDeleteRequest(
                 obj_id=voucher.id,
             )
         )

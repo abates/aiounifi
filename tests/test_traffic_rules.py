@@ -5,7 +5,11 @@ pytest --cov-report term-missing --cov=aiounifi.traffic_rule tests/test_traffic_
 
 import pytest
 
-from aiounifi.models.traffic_rule import TargetDevice, TrafficRuleEnableRequest
+from aiounifi.models.traffic_rule import (
+    TargetDevice,
+    TrafficRule,
+    TrafficRuleEnableRequest,
+)
 
 from .fixtures import TRAFFIC_RULES, WIRELESS_CLIENT
 
@@ -32,7 +36,7 @@ async def test_traffic_rule_enable_request(
     )
 
     await unifi_controller.request(
-        TrafficRuleEnableRequest.create(traffic_rule, enable)
+        TrafficRuleEnableRequest(TrafficRule.from_json(traffic_rule), enable)
     )
 
     traffic_rule["enabled"] = enable

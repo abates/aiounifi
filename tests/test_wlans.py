@@ -22,7 +22,7 @@ async def test_wlan_password_change(
         "https://host:8443/api/s/default/rest/wlanconf/123", payload={}
     )
 
-    await unifi_controller.request(WlanChangePasswordRequest.create("123", "456"))
+    await unifi_controller.request(WlanChangePasswordRequest("123", "456"))
 
     assert unifi_called_with(
         "put",
@@ -40,7 +40,7 @@ async def test_wlan_enable(
         "https://host:8443/api/s/default/rest/wlanconf/123", payload={}
     )
 
-    await unifi_controller.request(WlanEnableRequest.create("123", enable))
+    await unifi_controller.request(WlanEnableRequest("123", enable))
 
     assert unifi_called_with(
         "put",

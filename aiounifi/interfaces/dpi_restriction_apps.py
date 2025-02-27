@@ -17,16 +17,16 @@ class DPIRestrictionApps(APIHandler[DPIRestrictionApp]):
     item_cls = DPIRestrictionApp
     process_messages = (MessageKey.DPI_APP_ADDED, MessageKey.DPI_APP_UPDATED)
     remove_messages = (MessageKey.DPI_APP_REMOVED,)
-    api_request = DpiRestrictionAppListRequest.create()
+    api_request = DpiRestrictionAppListRequest()
 
     async def enable(self, app_id: str) -> ApiResponse:
         """Enable DPI Restriction Group Apps."""
         return await self.controller.request(
-            DPIRestrictionAppEnableRequest.create(app_id, enable=True)
+            DPIRestrictionAppEnableRequest(app_id, enable=True)
         )
 
     async def disable(self, app_id: str) -> ApiResponse:
         """Disable DPI Restriction Group Apps."""
         return await self.controller.request(
-            DPIRestrictionAppEnableRequest.create(app_id, enable=False)
+            DPIRestrictionAppEnableRequest(app_id, enable=False)
         )

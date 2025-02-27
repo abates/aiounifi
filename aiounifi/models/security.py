@@ -1,7 +1,6 @@
 """Security models related to firewall groups and rules."""
 
 from dataclasses import dataclass, field
-from typing import Self
 
 from .api import ApiItem, ApiRequest
 
@@ -10,10 +9,9 @@ from .api import ApiItem, ApiRequest
 class FirewallGroupRequest(ApiRequest):
     """Request object for device list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create device list request."""
-        return cls(method="get", path="/rest/firewallgroup")
+        super().__init__(method="get", path="/rest/firewallgroup")
 
 
 @dataclass
@@ -73,27 +71,26 @@ class FirewallRule(ApiItem):
 class FirewallRuleRequest(ApiRequest):
     """Request object for firewall rules list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create firewall rule request."""
-        return cls(method="get", path="/rest/firewallrule")
+        super().__init__(method="get", path="/rest/firewallrule")
 
 
 @dataclass
 class FirewallAddressGroupRequest(ApiRequest):
     """Request object for firewall address groups list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create device list request."""
-        return cls(method="get", path="/rest/firewallgroup?group_type=address-group")
+        super().__init__(
+            method="get", path="/rest/firewallgroup?group_type=address-group"
+        )
 
 
 @dataclass
 class FirewallPortGroupRequest(ApiRequest):
     """Request object for firewall port groups list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create device list request."""
-        return cls(method="get", path="/rest/firewallgroup?group_type=port-group")
+        super().__init__(method="get", path="/rest/firewallgroup?group_type=port-group")

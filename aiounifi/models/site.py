@@ -1,7 +1,6 @@
 """Site is a specific grouping in a UniFi network."""
 
 from dataclasses import dataclass
-from typing import Self
 
 from .api import ApiItem, ApiRequest, json_field
 
@@ -22,10 +21,9 @@ class Site(ApiItem):
 class SiteListRequest(ApiRequest):
     """Request object for site list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create site list request."""
-        return cls(method="get", path="/self/sites")
+        super().__init__(method="get", path="/self/sites")
 
     def full_path(self, site: str, is_unifi_os: bool) -> str:
         """Url to list sites is global for controller."""

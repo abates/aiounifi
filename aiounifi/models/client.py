@@ -1,7 +1,6 @@
 """Clients are devices on a UniFi network."""
 
 from dataclasses import dataclass
-from typing import Self
 
 from .api import ApiItem, ApiRequest, json_field
 
@@ -10,30 +9,27 @@ from .api import ApiItem, ApiRequest, json_field
 class AllClientListRequest(ApiRequest):
     """Request object for all clients list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create all clients list request."""
-        return cls(method="get", path="/rest/user")
+        super().__init__(method="get", path="/rest/user")
 
 
 @dataclass
 class ClientListRequest(ApiRequest):
     """Request object for active client list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create active client list request."""
-        return cls(method="get", path="/stat/sta")
+        super().__init__(method="get", path="/stat/sta")
 
 
 @dataclass
 class ClientBlockRequest(ApiRequest):
     """Request object for client block."""
 
-    @classmethod
-    def create(cls, mac: str, block: bool) -> Self:
+    def __init__(self, mac: str, block: bool):
         """Create client block request."""
-        return cls(
+        super().__init__(
             method="post",
             path="/cmd/stamgr",
             data={
@@ -47,10 +43,9 @@ class ClientBlockRequest(ApiRequest):
 class ClientReconnectRequest(ApiRequest):
     """Request object for client reconnect."""
 
-    @classmethod
-    def create(cls, mac: str) -> Self:
+    def __init__(self, mac: str):
         """Create client reconnect request."""
-        return cls(
+        super().__init__(
             method="post",
             path="/cmd/stamgr",
             data={
@@ -64,10 +59,9 @@ class ClientReconnectRequest(ApiRequest):
 class ClientRemoveRequest(ApiRequest):
     """Request object for client removal."""
 
-    @classmethod
-    def create(cls, macs: list[str]) -> Self:
+    def __init__(self, macs: list[str]):
         """Create client removal request."""
-        return cls(
+        super().__init__(
             method="post",
             path="/cmd/stamgr",
             data={

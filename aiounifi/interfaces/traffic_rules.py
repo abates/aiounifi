@@ -1,7 +1,5 @@
 """Traffic rules as part of a UniFi network."""
 
-from copy import deepcopy
-
 from ..models.api import ApiResponse
 from ..models.traffic_rule import (
     TrafficRule,
@@ -16,7 +14,7 @@ class TrafficRules(APIHandler[TrafficRule]):
 
     obj_id_key = "_id"
     item_cls = TrafficRule
-    api_request = TrafficRuleListRequest.create()
+    api_request = TrafficRuleListRequest()
 
     async def enable(self, traffic_rule: TrafficRule) -> ApiResponse:
         """Enable traffic rule defined in controller."""
@@ -28,9 +26,8 @@ class TrafficRules(APIHandler[TrafficRule]):
 
     async def toggle(self, traffic_rule: TrafficRule, state: bool) -> ApiResponse:
         """Set traffic rule - defined in controller - to the desired state."""
-        traffic_rule_dict = deepcopy(traffic_rule.raw)
         traffic_rule_response = await self.controller.request(
-            TrafficRuleEnableRequest.create(traffic_rule_dict, enable=state)
+            TrafficRuleEnableRequest(traffic_rule, enable=state)
         )
         self.process_raw(traffic_rule_response.data)
         return traffic_rule_response

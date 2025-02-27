@@ -30,7 +30,6 @@ class Ports(APIHandler[Port]):
                     continue
                 obj_id = f"{device_id}_{port_idx}"
                 self[obj_id] = port
-                self.signal_subscribers(event, obj_id)
             return
 
         matched_obj_ids = [obj_id for obj_id in self if obj_id.startswith(device_id)]

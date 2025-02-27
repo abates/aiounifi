@@ -154,7 +154,7 @@ class Event(ApiItem):
         return self.ap or self.gw or self.sw or ""
 
     @property
-    def event(self) -> str:
+    def event(self) -> str | None:
         """Event key e.g. 'EVT_WU_Disconnected'.
 
         To be removed.

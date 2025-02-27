@@ -1,7 +1,6 @@
 """Port forwarding in a UniFi network."""
 
 from dataclasses import dataclass
-from typing import Self
 
 from .api import ApiItem, ApiRequest, json_field
 
@@ -26,22 +25,20 @@ class PortForward(ApiItem):
 class PortForwardListRequest(ApiRequest):
     """Request object for port forward list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create port forward list request."""
-        return cls(method="get", path="/rest/portforward")
+        super().__init__(method="get", path="/rest/portforward")
 
 
 @dataclass
 class PortForwardEnableRequest(ApiRequest):
     """Request object for enabling port forward."""
 
-    @classmethod
-    def create(cls, port_forward: "PortForward", enable: bool) -> Self:
+    def __init__(self, port_forward: "PortForward", enable: bool):
         """Create enable port forward request."""
-        data = port_forward.raw.copy()
+        data = (port_forward.raw or {}).copy()
         data["enabled"] = enable
-        return cls(
+        super().__init__(
             method="put",
             path=f"/rest/portforward/{data['_id']}",
             data=data,

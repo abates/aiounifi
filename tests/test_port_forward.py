@@ -43,7 +43,7 @@ async def test_port_forward(
     expected: dict[str, Any] = PORT_FORWARDING["data"][0].copy()
     expected["enabled"] = False
 
-    await unifi_controller.request(PortForwardEnableRequest.create(port_forward, False))
+    await unifi_controller.request(PortForwardEnableRequest(port_forward, False))
 
     assert unifi_called_with(
         "put",

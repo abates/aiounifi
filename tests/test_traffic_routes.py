@@ -12,6 +12,7 @@ from aiounifi.models.traffic_route import (
     IPAddress,
     MatchingTarget,
     TargetDevice,
+    TrafficRoute,
     TrafficRouteSaveRequest,
 )
 
@@ -49,7 +50,7 @@ async def test_traffic_route_enable_request(
     )
 
     await unifi_controller.request(
-        TrafficRouteSaveRequest.create(traffic_route, enable)
+        TrafficRouteSaveRequest(TrafficRoute.from_json(traffic_route), enable)
     )
 
     assert unifi_called_with(
@@ -154,7 +155,11 @@ async def test_traffic_routes(unifi_controller, unifi_called_with):
     assert traffic_route.id == "6468ecd4c1dd1932ad2f801c"
     assert traffic_route.description == "Test domain rule"
     assert traffic_route.domains == [
-        Domain(domain="example.com", port_ranges=[], ports=[]),
+        Domain(
+            domain="example.com",
+            port_ranges=[],
+            ports=[],
+        ),
     ]
     assert traffic_route.enabled is True
     assert traffic_route.ip_addresses == []
@@ -164,7 +169,10 @@ async def test_traffic_routes(unifi_controller, unifi_called_with):
     assert traffic_route.next_hop == ""
     assert traffic_route.regions == []
     assert traffic_route.target_devices == [
-        TargetDevice(network_id=WIRELESS_CLIENT["network_id"], type="NETWORK"),
+        TargetDevice(
+            network_id=WIRELESS_CLIENT["network_id"],
+            type="NETWORK",
+        ),
     ]
 
     traffic_route = traffic_routes["655565af1e1c2754a39388a4"]
@@ -179,7 +187,10 @@ async def test_traffic_routes(unifi_controller, unifi_called_with):
     assert traffic_route.next_hop == ""
     assert traffic_route.regions == []
     assert traffic_route.target_devices == [
-        TargetDevice(network_id=WIRELESS_CLIENT["network_id"], type="NETWORK"),
+        TargetDevice(
+            network_id=WIRELESS_CLIENT["network_id"],
+            type="NETWORK",
+        ),
     ]
 
     traffic_route = traffic_routes["655566f91e1c2754a393892c"]
@@ -188,7 +199,12 @@ async def test_traffic_routes(unifi_controller, unifi_called_with):
     assert traffic_route.domains == []
     assert traffic_route.enabled is False
     assert traffic_route.ip_addresses == [
-        IPAddress(ip_or_subnet="1.1.1.1", ip_version="v4", port_ranges=[], ports=[]),
+        IPAddress(
+            ip_or_subnet="1.1.1.1",
+            ip_version="v4",
+            port_ranges=[],
+            ports=[],
+        ),
     ]
     assert traffic_route.ip_ranges == []
     assert traffic_route.matching_target == MatchingTarget.IP
@@ -196,5 +212,8 @@ async def test_traffic_routes(unifi_controller, unifi_called_with):
     assert traffic_route.next_hop == ""
     assert traffic_route.regions == []
     assert traffic_route.target_devices == [
-        TargetDevice(network_id=WIRELESS_CLIENT["network_id"], type="NETWORK"),
+        TargetDevice(
+            network_id=WIRELESS_CLIENT["network_id"],
+            type="NETWORK",
+        ),
     ]

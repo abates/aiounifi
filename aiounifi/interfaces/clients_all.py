@@ -9,4 +9,4 @@ class ClientsAll(APIHandler[Client]):
 
     obj_id_key = "mac"
     item_cls = Client
-    api_request = AllClientListRequest.create()
+    api_request = AllClientListRequest()

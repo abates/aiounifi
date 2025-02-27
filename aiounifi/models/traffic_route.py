@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Self
 
 from aiounifi.models.traffic import IPAddress, IPRange, PortRange, TargetDevice
 
@@ -31,7 +30,6 @@ class Domain(ApiItem):
 class TrafficRoute(ApiItem):
     """Traffic route type definition."""
 
-    id: str = json_field("_id")
     description: str
     domains: list[Domain]
     enabled: bool
@@ -43,15 +41,16 @@ class TrafficRoute(ApiItem):
     regions: list[str]
     target_devices: list[TargetDevice]
 
+    id: str = json_field("_id")
+
 
 @dataclass
 class TrafficRouteListRequest(ApiRequestV2):
     """Request object for traffic route list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create traffic route request."""
-        return cls(method="get", path="/trafficroutes", data=None)
+        super().__init__(method="get", path="/trafficroutes", data=None)
 
 
 @dataclass
@@ -62,13 +61,12 @@ class TrafficRouteSaveRequest(ApiRequestV2):
     The properties provide convient access for reading, however do not provide means of setting values.
     """
 
-    @classmethod
-    def create(cls, traffic_route: TrafficRoute, enable: bool | None = None) -> Self:
+    def __init__(self, traffic_route: TrafficRoute, enable: bool | None = None):
         """Create traffic route save request."""
         if enable is not None:
-            traffic_route["enabled"] = enable
-        return cls(
+            traffic_route.enabled = enable
+        super().__init__(
             method="put",
-            path=f"/trafficroutes/{traffic_route['_id']}",
-            data=traffic_route,
+            path=f"/trafficroutes/{traffic_route.id}",
+            data=traffic_route.to_json(),
         )

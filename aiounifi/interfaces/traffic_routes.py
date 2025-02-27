@@ -1,7 +1,5 @@
 """Traffic routes as part of a UniFi network."""
 
-from copy import deepcopy
-
 from ..models.api import ApiResponse
 from ..models.traffic_route import (
     TrafficRoute,
@@ -16,7 +14,7 @@ class TrafficRoutes(APIHandler[TrafficRoute]):
 
     obj_id_key = "_id"
     item_cls = TrafficRoute
-    api_request = TrafficRouteListRequest.create()
+    api_request = TrafficRouteListRequest()
 
     async def enable(self, traffic_route: TrafficRoute) -> ApiResponse:
         """Enable traffic route defined in controller."""
@@ -30,9 +28,8 @@ class TrafficRoutes(APIHandler[TrafficRoute]):
         self, traffic_route: TrafficRoute, state: bool | None = None
     ) -> ApiResponse:
         """Set traffic route - defined in controller - to the desired state."""
-        traffic_route_dict = deepcopy(traffic_route.raw)
         traffic_route_response = await self.controller.request(
-            TrafficRouteSaveRequest.create(traffic_route_dict, enable=state)
+            TrafficRouteSaveRequest(traffic_route, enable=state)
         )
         self.process_raw(traffic_route_response.data)
         return traffic_route_response

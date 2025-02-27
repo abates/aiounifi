@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from abc import ABC
 from collections import UserDict, defaultdict
-from collections.abc import Callable
+from dataclasses import dataclass
 import enum
-from typing import TYPE_CHECKING, Any, final
+from typing import TYPE_CHECKING, Any, Protocol, final
 
 from ..models.api import ApiItem, ApiRequest
 
@@ -23,11 +23,27 @@ class ItemEvent(enum.Enum):
     DELETED = "deleted"
 
 
-CallbackType = Callable[[ItemEvent, str], None]
-SubscriptionType = tuple[CallbackType, tuple[ItemEvent, ...] | None]
-UnsubscribeType = Callable[[], None]
-
 ID_FILTER_ALL = "*"
+
+
+class Callback(Protocol):
+    """An event callback."""
+
+    def __call__(self, event: ItemEvent, obj_id: str) -> None: ...  # noqa: D102
+
+
+class Unsubscribe(Protocol):
+    """Remove a event callback from the subscription handler."""
+
+    def __call__() -> None: ...  # noqa: D102
+
+
+@dataclass
+class Subscription:
+    """A subscription for a message stream."""
+
+    callback: Callback
+    event_filter: set[ItemEvent]
 
 
 class SubscriptionHandler(ABC):
@@ -36,43 +52,47 @@ class SubscriptionHandler(ABC):
     def __init__(self) -> None:
         """Initialize subscription handler."""
         super().__init__()
-        self._subscribers: dict[str, list[SubscriptionType]] = defaultdict(list)
+        self._subscribers: dict[str, list[Subscription]] = defaultdict(list)
 
     def signal_subscribers(self, event: ItemEvent, obj_id: str) -> None:
         """Signal subscribers."""
-        subscribers: list[SubscriptionType] = (
+        subscribers: list[Subscription] = (
             self._subscribers[obj_id] + self._subscribers[ID_FILTER_ALL]
         )
-        for callback, event_filter in subscribers:
-            if event_filter is not None and event not in event_filter:
-                continue
-            callback(event, obj_id)
+        for subscriber in subscribers:
+            if subscriber.event_filter is None or event in subscriber.event_filter:
+                subscriber.callback(
+                    event,
+                    obj_id,
+                )
 
     def subscribe(
         self,
-        callback: CallbackType,
+        callback: Callback,
         event_filter: tuple[ItemEvent, ...] | ItemEvent | None = None,
         id_filter: tuple[str] | str | None = None,
-    ) -> UnsubscribeType:
+    ) -> Unsubscribe:
         """Subscribe to added events."""
         if isinstance(event_filter, ItemEvent):
             event_filter = (event_filter,)
-        subscription = (callback, event_filter)
 
-        _id_filter: tuple[str]
+        subscription = Subscription(callback=callback, event_filter=event_filter)
+
         if id_filter is None:
-            _id_filter = (ID_FILTER_ALL,)
+            id_filter = (ID_FILTER_ALL,)
         elif isinstance(id_filter, str):
-            _id_filter = (id_filter,)
+            id_filter = (id_filter,)
 
-        for obj_id in _id_filter:
+        for obj_id in id_filter:
             self._subscribers[obj_id].append(subscription)
 
         def unsubscribe() -> None:
-            for obj_id in _id_filter:
+            for obj_id in id_filter:
                 if subscription not in self._subscribers[obj_id]:
                     continue
                 self._subscribers[obj_id].remove(subscription)
+                if not self._subscribers[obj_id]:
+                    del self._subscribers[obj_id]
 
         return unsubscribe
 
@@ -100,7 +120,6 @@ class APIHandler[T: ApiItem](SubscriptionHandler, UserDict[T]):
         raw = await self.controller.request(self.api_request)
         self.process_raw(raw.data)
 
-    @final
     def process_raw(self, raw: list[dict[str, Any]]) -> None:
         """Process full raw response."""
         for raw_item in raw:
@@ -113,30 +132,27 @@ class APIHandler[T: ApiItem](SubscriptionHandler, UserDict[T]):
             self.process_item(message.data)
 
         elif message.meta.message in self.remove_messages:
-            self.remove_item(message.data)
+            self.pop(message.data[self.obj_id_key], None)
 
-    @final
     def process_item(self, raw: dict[str, Any]) -> None:
         """Process item data."""
         if self.obj_id_key not in raw:
             return
 
-        obj_id: str
-        obj_is_known = (obj_id := raw[self.obj_id_key]) in self
-        self[obj_id] = self.item_cls.from_json(data=raw)
+        self[raw[self.obj_id_key]] = self.item_cls.from_json(data=raw)
 
+    def __setitem__(self, key, item):
+        """Set the handler's collection key to item."""
+        changed = key in self
+        super().__setitem__(key, item)
         self.signal_subscribers(
-            ItemEvent.CHANGED if obj_is_known else ItemEvent.ADDED,
-            obj_id,
+            ItemEvent.CHANGED if changed else ItemEvent.ADDED,
+            key,
         )
 
-    @final
-    def remove_item(self, raw: dict[str, Any]) -> None:
-        """Remove item."""
-        self.pop(raw[self.obj_id_key])
-
-    def pop(self, obj_id: str):
+    def __delitem__(self, obj_id: str):
         """If obj_id is in the dictionary, remove it and signal subscribers."""
-        item = super().pop(obj_id, None)
-        if item:
+        item = self.get(obj_id)
+        if item is not None:
+            super().__delitem__(obj_id)
             self.signal_subscribers(ItemEvent.DELETED, obj_id)

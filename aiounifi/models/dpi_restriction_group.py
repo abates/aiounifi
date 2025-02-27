@@ -1,7 +1,6 @@
 """DPI Restrictions as part of a UniFi network."""
 
 from dataclasses import dataclass, field
-from typing import Self
 
 from .api import ApiItem, ApiRequest, json_field
 
@@ -10,10 +9,9 @@ from .api import ApiItem, ApiRequest, json_field
 class DpiRestrictionGroupListRequest(ApiRequest):
     """Request object for DPI restriction group list."""
 
-    @classmethod
-    def create(cls) -> Self:
+    def __init__(self):
         """Create DPI restriction group list request."""
-        return cls(method="get", path="/rest/dpigroup")
+        super().__init__(method="get", path="/rest/dpigroup")
 
 
 @dataclass
