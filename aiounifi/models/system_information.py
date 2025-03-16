@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .api import ApiItem, ApiRequest, json_field
+from .api import ApiItem, json_field
 
 
 @dataclass
@@ -54,12 +54,3 @@ class SystemInformation(ApiItem):
     update_downloaded: bool | None = None
     uptime: int | None = None
     version: str | None = None
-
-
-@dataclass
-class SystemInformationRequest(ApiRequest):
-    """Request object for system information."""
-
-    def __init__(self):
-        """Create system information request."""
-        super().__init__(method="get", path="/stat/sysinfo")

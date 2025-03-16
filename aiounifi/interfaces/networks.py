@@ -2,12 +2,9 @@
 
 from typing import Any
 
-from ..models.networks import (
-    CorporateNetworkConf,
-    NetworkConf,
-    NetworkConfRequest,
-    WanNetworkConf,
-)
+from aiounifi.models.api import ApiEndpoint
+
+from ..models.networks import CorporateNetworkConf, NetworkConf, WanNetworkConf
 from .api_handlers import APIHandler
 
 
@@ -15,8 +12,7 @@ class Networks(APIHandler[NetworkConf]):
     """Represents network configurations."""
 
     obj_id_key = "_id"
-    # process_messages = ()
-    api_request = NetworkConfRequest()
+    list_endpoint = ApiEndpoint(path="/rest/networkconf")
 
     def process_item(self, raw: dict[str, Any]):
         """Process the item and add a CorporateNetworkConf or WanNetworkConf object to the handler."""

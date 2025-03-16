@@ -1,6 +1,6 @@
 """Library to communicate with a UniFi controller."""
 
-from .controller import Controller
+from .client import UnifiClient
 from .errors import (
     AiounifiException,
     BadGateway,
@@ -16,7 +16,7 @@ from .errors import (
 )
 
 __all__ = [
-    "Controller",
+    "UnifiClient",
     "AiounifiException",
     "BadGateway",
     "Forbidden",

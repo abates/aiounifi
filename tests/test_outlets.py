@@ -19,7 +19,7 @@ def test_outlets_handler_device_processing():
         devices[device.device_id] = device
         for outlet in device.outlet_table:
             outlets[f"{device.device_id}_{outlet.index}"] = outlet
-
+    assert len(outlets) == 8
     controller = Mock()
     controller.devices = Mock()
     controller.devices.__getitem__ = Mock(side_effect=lambda key: devices[key])
@@ -27,6 +27,7 @@ def test_outlets_handler_device_processing():
 
     for device_id in devices:
         handler.process_device(ItemEvent.ADDED, device_id)
+    assert handler.data == outlets
 
     outlets = {
         outlet_id: outlet

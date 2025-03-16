@@ -10,7 +10,7 @@ from ..models.event import Event, EventKey
 from ..models.message import Message, MessageKey
 
 if TYPE_CHECKING:
-    from ..controller import Controller
+    from ..client import UnifiClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ UnsubscribeType = Callable[[], None]
 class EventHandler:
     """Event handler class."""
 
-    def __init__(self, controller: Controller) -> None:
+    def __init__(self, controller: UnifiClient) -> None:
         """Initialize API items."""
         self.controller = controller
         self._subscribers: list[SubscriptionType] = []

@@ -1,14 +1,9 @@
 """The security endpoint manages many things including firewall groups and rules."""
 
+from aiounifi.models.api import ApiEndpoint
+
 from ..models.message import MessageKey
-from ..models.security import (
-    FirewallAddressGroup,
-    FirewallAddressGroupRequest,
-    FirewallPortGroup,
-    FirewallPortGroupRequest,
-    FirewallRule,
-    FirewallRuleRequest,
-)
+from ..models.security import FirewallAddressGroup, FirewallPortGroup, FirewallRule
 from .api_handlers import APIHandler
 
 
@@ -18,7 +13,7 @@ class FirewallAddressGroups(APIHandler[FirewallAddressGroup]):
     obj_id_key = "_id"
     item_cls = FirewallAddressGroup
     process_messages = (MessageKey.FIREWALL_ADDRESS_GROUP_UPDATED,)
-    api_request = FirewallAddressGroupRequest()
+    list_endpoint = ApiEndpoint(path="/rest/firewallgroup?group_type=address-group")
 
 
 class FirewallPortGroups(APIHandler[FirewallPortGroup]):
@@ -27,7 +22,7 @@ class FirewallPortGroups(APIHandler[FirewallPortGroup]):
     obj_id_key = "_id"
     item_cls = FirewallPortGroup
     process_messages = (MessageKey.FIREWALL_PORT_GROUP_UPDATED,)
-    api_request = FirewallPortGroupRequest()
+    list_endpoint = ApiEndpoint(path="/rest/firewallgroup?group_type=port-group")
 
 
 class FirewallRules(APIHandler[FirewallRule]):
@@ -36,4 +31,4 @@ class FirewallRules(APIHandler[FirewallRule]):
     obj_id_key = "_id"
     item_cls = FirewallRule
     process_messages = (MessageKey.FIREWALL_RULE_UPDATED,)
-    api_request = FirewallRuleRequest()
+    list_endpoint = ApiEndpoint(path="/rest/firewallrule")

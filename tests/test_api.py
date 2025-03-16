@@ -1,7 +1,7 @@
 """Test API handlers."""
 
 from collections import defaultdict
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -19,26 +19,26 @@ from aiounifi.models.message import Message, MessageKey, Meta
     ("event_filter", "id_filter", "subscribers"),
     [
         (None, None, {"*": None}),
-        (ItemEvent.ADDED, "1234", {"1234": (ItemEvent.ADDED,)}),
-        (ItemEvent.CHANGED, "1234", {"1234": (ItemEvent.CHANGED,)}),
-        (ItemEvent.DELETED, "1234", {"1234": (ItemEvent.DELETED,)}),
+        (ItemEvent.ADDED, "1234", {"1234": {ItemEvent.ADDED}}),
+        (ItemEvent.CHANGED, "1234", {"1234": {ItemEvent.CHANGED}}),
+        (ItemEvent.DELETED, "1234", {"1234": {ItemEvent.DELETED}}),
         (
             ItemEvent.DELETED,
             ("1234", "5678"),
-            {"1234": (ItemEvent.DELETED,), "5678": (ItemEvent.DELETED,)},
+            {"1234": {ItemEvent.DELETED}, "5678": {ItemEvent.DELETED}},
         ),
         (
             (ItemEvent.ADDED, ItemEvent.DELETED),
             ("1234", "5678"),
             {
-                "1234": (
+                "1234": {
                     ItemEvent.ADDED,
                     ItemEvent.DELETED,
-                ),
-                "5678": (
+                },
+                "5678": {
                     ItemEvent.ADDED,
                     ItemEvent.DELETED,
-                ),
+                },
             },
         ),
     ],
@@ -161,31 +161,31 @@ def test_api_handler_init(process_filter, remove_filter, expected):
 
 def test_api_handler_signaling():
     """Verify that signals are sent for items being added/updated/removed from a handler."""
-    handler = APIHandler(None)
+    handler = APIHandler(None)  # type: ignore
     callback = Mock()
     handler.subscribe(callback, None, "*")
-    handler[0] = 0
-    callback.assert_called_with(ItemEvent.ADDED, 0)
+    handler["0"] = 0
+    callback.assert_called_with(ItemEvent.ADDED, "0")
     callback.reset_mock()
 
-    handler[0] = 1
-    callback.assert_called_with(ItemEvent.CHANGED, 0)
+    handler["0"] = 1
+    callback.assert_called_with(ItemEvent.CHANGED, "0")
     callback.reset_mock()
 
-    handler.pop(0)
-    callback.assert_called_with(ItemEvent.DELETED, 0)
+    handler.pop("0")
+    callback.assert_called_with(ItemEvent.DELETED, "0")
     callback.reset_mock()
 
-    handler.pop(0, None)
+    handler.pop("0", None)
     callback.assert_not_called()
     callback.reset_mock()
 
-    handler[0] = 0
-    callback.assert_called_with(ItemEvent.ADDED, 0)
+    handler["0"] = 0
+    callback.assert_called_with(ItemEvent.ADDED, "0")
     callback.reset_mock()
 
-    del handler[0]
-    callback.assert_called_with(ItemEvent.DELETED, 0)
+    del handler["0"]
+    callback.assert_called_with(ItemEvent.DELETED, "0")
 
 
 @pytest.mark.parametrize(
@@ -209,26 +209,20 @@ def test_api_handler_signaling():
 async def test_api_handler_update(response, expected):
     """Verify the behavior of the update method and its related helpers."""
 
-    controller = Mock()
     api_request_str = "API_REQUEST"
-
-    async def request(request_obj):
-        if request_obj is not api_request_str:
-            raise ValueError("Didn't get expected request object")
-        return ApiResponse(meta={}, data=response)
-
-    controller.request = request
-
+    client = Mock()
+    client.get = AsyncMock(return_value=ApiResponse(meta={}, data=response))
     item_class = Mock()
     item_class.from_json = lambda data: data
 
     class TestHandler(APIHandler):
         obj_id_key = "id"
         item_cls = item_class
-        api_request = api_request_str
+        list_endpoint = api_request_str  # type: ignore
 
-    handler = TestHandler(controller)
+    handler = TestHandler(client)
     await handler.update()
+    client.get.assert_called_with(api_request_str)
     assert handler.data == expected
 
 

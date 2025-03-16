@@ -19,7 +19,7 @@ MESSAGE_HANDLER_DATA = [
 
 
 @pytest.mark.parametrize(("message_filter", "expected"), MESSAGE_HANDLER_DATA)
-async def test_message_handler(message_filter, expected):
+def test_message_handler(message_filter, expected):
     """Verify message handler behaves according to configured filters."""
     message_handler = MessageHandler(controller=Mock())
 
@@ -46,7 +46,7 @@ async def test_message_handler(message_filter, expected):
     assert len(message_handler) == 0
 
 
-async def test_unsupported_message_key():
+def test_unsupported_message_key():
     """Validate unsupported message key handling."""
     message = Message.from_dict(
         {
@@ -61,7 +61,7 @@ async def test_unsupported_message_key():
 
 
 @patch("aiounifi.interfaces.messages.LOGGER")
-async def test_message_handler_bad_json_data(logger_mock):
+def test_message_handler_bad_json_data(logger_mock):
     """Verify message handler catches json error."""
     MessageHandler(controller=Mock()).new_data(b"")
     assert logger_mock.debug.called

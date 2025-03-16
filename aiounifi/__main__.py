@@ -9,7 +9,7 @@ from ssl import SSLContext
 import aiohttp
 
 import aiounifi
-from aiounifi.controller import Controller
+from aiounifi.client import UnifiClient
 from aiounifi.models.configuration import Configuration
 
 LOGGER = logging.getLogger(__name__)
@@ -23,9 +23,9 @@ async def unifi_controller(
     site: str,
     session: aiohttp.ClientSession,
     ssl_context: SSLContext | None = None,
-) -> Controller | None:
+) -> UnifiClient | None:
     """Set up UniFi controller and verify credentials."""
-    controller = Controller(
+    controller = UnifiClient(
         Configuration(
             session,
             host,

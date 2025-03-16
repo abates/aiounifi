@@ -2,73 +2,7 @@
 
 from dataclasses import dataclass
 
-from .api import ApiItem, ApiRequest, json_field
-
-
-@dataclass
-class AllClientListRequest(ApiRequest):
-    """Request object for all clients list."""
-
-    def __init__(self):
-        """Create all clients list request."""
-        super().__init__(method="get", path="/rest/user")
-
-
-@dataclass
-class ClientListRequest(ApiRequest):
-    """Request object for active client list."""
-
-    def __init__(self):
-        """Create active client list request."""
-        super().__init__(method="get", path="/stat/sta")
-
-
-@dataclass
-class ClientBlockRequest(ApiRequest):
-    """Request object for client block."""
-
-    def __init__(self, mac: str, block: bool):
-        """Create client block request."""
-        super().__init__(
-            method="post",
-            path="/cmd/stamgr",
-            data={
-                "cmd": "block-sta" if block else "unblock-sta",
-                "mac": mac,
-            },
-        )
-
-
-@dataclass
-class ClientReconnectRequest(ApiRequest):
-    """Request object for client reconnect."""
-
-    def __init__(self, mac: str):
-        """Create client reconnect request."""
-        super().__init__(
-            method="post",
-            path="/cmd/stamgr",
-            data={
-                "cmd": "kick-sta",
-                "mac": mac,
-            },
-        )
-
-
-@dataclass
-class ClientRemoveRequest(ApiRequest):
-    """Request object for client removal."""
-
-    def __init__(self, macs: list[str]):
-        """Create client removal request."""
-        super().__init__(
-            method="post",
-            path="/cmd/stamgr",
-            data={
-                "cmd": "forget-sta",
-                "macs": macs,
-            },
-        )
+from .api import ApiItem, json_field
 
 
 @dataclass

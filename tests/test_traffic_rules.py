@@ -1,123 +1,73 @@
-"""Test traffic rules API for disabling and enabling traffic rules.
+"""Test traffic routes API for disabling and enabling traffic routes.
 
-pytest --cov-report term-missing --cov=aiounifi.traffic_rule tests/test_traffic_rules.py
+pytest --cov-report term-missing --cov=aiounifi.traffic_route tests/test_traffic_routes.py
 """
+
+from typing import Any
 
 import pytest
 
-from aiounifi.models.traffic_rule import (
-    TargetDevice,
-    TrafficRule,
-    TrafficRuleEnableRequest,
+from aiounifi.interfaces.traffic_rules import TrafficRules
+from aiounifi.models.traffic_rule import TrafficRule
+
+from tests.conftest import assert_handler_request
+
+
+@pytest.mark.parametrize(
+    ("method_name", "method_args", "expected_request", "expected_error"),
+    [
+        (
+            "save",
+            {
+                "api_item": TrafficRule(id="traffic_rule_1"),
+            },
+            {
+                "method": "put",
+                "endpoint": TrafficRules.update_endpoint,
+                "api_item": TrafficRule(id="traffic_rule_1"),
+                "data": {"_id": "traffic_rule_1"},
+            },
+            None,
+        ),
+        (
+            "enable",
+            {
+                "traffic_rule": TrafficRule(id="traffic_rule_1", enabled=False),
+            },
+            {
+                "method": "put",
+                "endpoint": TrafficRules.update_endpoint,
+                "api_item": TrafficRule(id="traffic_rule_1", enabled=True),
+                "data": {"_id": "traffic_rule_1", "enabled": True},
+            },
+            None,
+        ),
+        (
+            "disable",
+            {
+                "traffic_rule": TrafficRule(id="traffic_rule_1", enabled=True),
+            },
+            {
+                "method": "put",
+                "endpoint": TrafficRules.update_endpoint,
+                "api_item": TrafficRule(id="traffic_rule_1", enabled=False),
+                "data": {"_id": "traffic_rule_1", "enabled": False},
+            },
+            None,
+        ),
+    ],
 )
-
-from .fixtures import TRAFFIC_RULES, WIRELESS_CLIENT
-
-
-@pytest.mark.parametrize("is_unifi_os", [True])
-@pytest.mark.parametrize("enable", [True, False])
-async def test_traffic_rule_enable_request(
-    mock_aioresponse, unifi_controller, unifi_called_with, enable
+async def test_traffic_rules(
+    method_name: str,
+    method_args: dict[str, Any],
+    expected_request: dict[str, Any],
+    expected_error: type[Exception] | None,
 ):
-    """Test that traffic rule can be enabled and disabled."""
-    traffic_rule_enabled = TRAFFIC_RULES[0]
-    traffic_rule_enabled_id = traffic_rule_enabled["_id"]
-    traffic_rule_disabled = TRAFFIC_RULES[1]
-    traffic_rule_disabled_id = traffic_rule_disabled["_id"]
-
-    traffic_rule_id = traffic_rule_disabled_id if enable else traffic_rule_enabled_id
-    traffic_rule = traffic_rule_disabled if enable else traffic_rule_enabled
-    mock_aioresponse.put(
-        (
-            "https://host:8443/proxy/network/v2/api/site/default"
-            f"/trafficrules/{traffic_rule_id}"
-        ),
-        payload={},
+    """Test device interface methods."""
+    await assert_handler_request(
+        TrafficRules,
+        method_name,
+        method_args,
+        expected_request,
+        expected_error,
     )
-
-    await unifi_controller.request(
-        TrafficRuleEnableRequest(TrafficRule.from_json(traffic_rule), enable)
-    )
-
-    traffic_rule["enabled"] = enable
-    assert unifi_called_with(
-        "put",
-        f"/proxy/network/v2/api/site/default/trafficrules/{traffic_rule_id}",
-        json=traffic_rule,
-    )
-
-
-@pytest.mark.parametrize("traffic_rule_payload", [TRAFFIC_RULES])
-@pytest.mark.parametrize("is_unifi_os", [True])
-@pytest.mark.parametrize("enable", [True, False])
-@pytest.mark.usefixtures("_mock_endpoints")
-async def test_traffic_rule_toggle(mock_aioresponse, unifi_controller, enable):
-    """Test toggle method can enable and disable a traffic rule."""
-    traffic_rules = unifi_controller.traffic_rules
-    await traffic_rules.update()
-
-    traffic_rule_id = TRAFFIC_RULES[0 if not enable else 1]["_id"]
-
-    mock_aioresponse.put(
-        (
-            "https://host:8443/proxy/network/v2/api/site/default"
-            f"/trafficrules/{traffic_rule_id}"
-        ),
-        payload={},
-    )
-    await traffic_rules.toggle(traffic_rules[traffic_rule_id], enable)
-    assert traffic_rules[traffic_rule_id].enabled is enable
-
-
-@pytest.mark.parametrize("traffic_rule_payload", [TRAFFIC_RULES])
-@pytest.mark.parametrize("is_unifi_os", [True])
-@pytest.mark.parametrize("enable", [True, False])
-@pytest.mark.usefixtures("_mock_endpoints")
-async def test_traffic_rule_enable_disable(mock_aioresponse, unifi_controller, enable):
-    """Test individual methods for enabled and disabled."""
-    traffic_rules = unifi_controller.traffic_rules
-    await traffic_rules.update()
-
-    traffic_rule_id = TRAFFIC_RULES[0 if not enable else 1]["_id"]
-    traffic_rule_call = traffic_rules.disable if not enable else traffic_rules.enable
-
-    mock_aioresponse.put(
-        (
-            "https://host:8443/proxy/network/v2/api/site/default"
-            f"/trafficrules/{traffic_rule_id}"
-        ),
-        payload={},
-    )
-    await traffic_rule_call(traffic_rules[traffic_rule_id])
-    assert traffic_rules[traffic_rule_id].enabled is enable
-
-
-@pytest.mark.parametrize("is_unifi_os", [True])
-@pytest.mark.usefixtures("_mock_endpoints")
-async def test_no_traffic_rules(unifi_controller, unifi_called_with):
-    """Test that no traffic rules also work."""
-    traffic_rules = unifi_controller.traffic_rules
-    await traffic_rules.update()
-    assert unifi_called_with("get", "/proxy/network/v2/api/site/default/trafficrules")
-    assert len(traffic_rules.values()) == 0
-
-
-@pytest.mark.parametrize("traffic_rule_payload", [TRAFFIC_RULES])
-@pytest.mark.usefixtures("_mock_endpoints")
-async def test_traffic_rules(unifi_controller, unifi_called_with):
-    """Test that we get the expected traffic rule."""
-    traffic_rules = unifi_controller.traffic_rules
-    await traffic_rules.update()
-    assert unifi_called_with("get", "/v2/api/site/default/trafficrules")
-    assert len(traffic_rules.values()) == 2
-
-    traffic_rule = traffic_rules["6452cd9b859d5b11aa002ea1"]
-    assert traffic_rule.id == "6452cd9b859d5b11aa002ea1"
-    assert traffic_rule.description == "Test 1"
-    assert traffic_rule.enabled is False
-    assert traffic_rule.action == "BLOCK"
-    assert traffic_rule.matching_target == "INTERNET"
-    target_device1 = TargetDevice.from_json(
-        {"client_mac": WIRELESS_CLIENT["mac"], "type": "CLIENT"}
-    )
-    assert traffic_rule.target_devices == [target_device1]

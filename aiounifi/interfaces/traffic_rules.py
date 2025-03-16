@@ -1,11 +1,7 @@
 """Traffic rules as part of a UniFi network."""
 
-from ..models.api import ApiResponse
-from ..models.traffic_rule import (
-    TrafficRule,
-    TrafficRuleEnableRequest,
-    TrafficRuleListRequest,
-)
+from ..models.api import ApiEndpoint, ApiResponse
+from ..models.traffic_rule import TrafficRule
 from .api_handlers import APIHandler
 
 
@@ -14,20 +10,15 @@ class TrafficRules(APIHandler[TrafficRule]):
 
     obj_id_key = "_id"
     item_cls = TrafficRule
-    api_request = TrafficRuleListRequest()
+    list_endpoint = ApiEndpoint(path="/trafficrules", version=2)
+    update_endpoint = ApiEndpoint(path="/trafficrules/{api_item.id}", version=2)
 
     async def enable(self, traffic_rule: TrafficRule) -> ApiResponse:
         """Enable traffic rule defined in controller."""
-        return await self.toggle(traffic_rule, state=True)
+        traffic_rule.enabled = True
+        return await self.save(traffic_rule)
 
     async def disable(self, traffic_rule: TrafficRule) -> ApiResponse:
         """Disable traffic rule defined in controller."""
-        return await self.toggle(traffic_rule, state=False)
-
-    async def toggle(self, traffic_rule: TrafficRule, state: bool) -> ApiResponse:
-        """Set traffic rule - defined in controller - to the desired state."""
-        traffic_rule_response = await self.controller.request(
-            TrafficRuleEnableRequest(traffic_rule, enable=state)
-        )
-        self.process_raw(traffic_rule_response.data)
-        return traffic_rule_response
+        traffic_rule.enabled = False
+        return await self.save(traffic_rule)

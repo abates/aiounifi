@@ -3,71 +3,61 @@
 pytest --cov-report term-missing --cov=aiounifi.dpi tests/test_dpi.py
 """
 
-from aioresponses import aioresponses
+from typing import Any
+
 import pytest
 
-from aiounifi.controller import Controller
+from aiounifi.interfaces.dpi_restriction_apps import DPIRestrictionApps
 from aiounifi.models.dpi_restriction_app import DPIRestrictionApp
-from aiounifi.models.dpi_restriction_group import DPIRestrictionGroup
 
-from .fixtures import DPI_APPS, DPI_GROUPS
-
-from tests.conftest import UnifiCalledWith
+from tests.conftest import assert_handler_request
 
 
-@pytest.mark.parametrize("dpi_app_payload", [DPI_APPS])
-@pytest.mark.usefixtures("_mock_endpoints")
+@pytest.mark.parametrize(
+    ("method_name", "request_args", "api_request", "expected_error"),
+    [
+        (
+            "set_enabled",
+            {
+                "app": DPIRestrictionApp(id="TEST_APP_ID", enabled=False),
+                "enabled": True,
+            },
+            {
+                "method": "put",
+                "endpoint": DPIRestrictionApps.update_endpoint,
+                "data": {"enabled": True},
+            },
+            None,
+        ),
+        (
+            "enable",
+            {"app": DPIRestrictionApp(id="TEST_APP_ID", enabled=False)},
+            {
+                "method": "put",
+                "endpoint": DPIRestrictionApps.update_endpoint,
+                "data": {"enabled": True},
+            },
+            None,
+        ),
+        (
+            "disable",
+            {"app": DPIRestrictionApp(id="TEST_APP_ID", enabled=True)},
+            {
+                "method": "put",
+                "endpoint": DPIRestrictionApps.update_endpoint,
+                "data": {"enabled": False},
+            },
+            None,
+        ),
+    ],
+)
 async def test_dpi_apps(
-    mock_aioresponse: aioresponses,
-    unifi_controller: Controller,
-    unifi_called_with: UnifiCalledWith,
-) -> None:
-    """Test that dpi_apps can create an app."""
-    dpi_apps = unifi_controller.dpi_apps
-    await dpi_apps.update()
-    assert len(dpi_apps.values()) == 1
-
-    app: DPIRestrictionApp = dpi_apps["5f976f62e3c58f018ec7e17d"]
-    assert app.id == "5f976f62e3c58f018ec7e17d"
-    assert app.apps == []
-    assert app.blocked
-    assert app.cats == ["4"]
-    assert app.enabled
-    assert app.log
-    assert app.site_id == "5ba29dd4e3c58f026e9d7c38"
-
-    mock_aioresponse.put(
-        "https://host:8443/api/s/default/rest/dpiapp/5f976f62e3c58f018ec7e17d",
-        payload={},
-        repeat=True,
+    method_name: str,
+    request_args: dict[str, Any],
+    api_request: dict[str, Any],
+    expected_error: type[Exception] | None,
+):
+    """Test device interface methods."""
+    await assert_handler_request(
+        DPIRestrictionApps, method_name, request_args, api_request, expected_error
     )
-    await dpi_apps.enable("5f976f62e3c58f018ec7e17d")
-    assert unifi_called_with(
-        "put",
-        "/api/s/default/rest/dpiapp/5f976f62e3c58f018ec7e17d",
-        json={"enabled": True},
-    )
-
-    await dpi_apps.disable("5f976f62e3c58f018ec7e17d")
-    assert unifi_called_with(
-        "put",
-        "/api/s/default/rest/dpiapp/5f976f62e3c58f018ec7e17d",
-        json={"enabled": False},
-    )
-
-
-@pytest.mark.parametrize("dpi_group_payload", [DPI_GROUPS])
-@pytest.mark.usefixtures("_mock_endpoints")
-async def test_dpi_groups(unifi_controller: Controller) -> None:
-    """Test that dpi_groups can create a group."""
-    dpi_groups = unifi_controller.dpi_groups
-    await dpi_groups.update()
-    assert len(dpi_groups.values()) == 2
-
-    group: DPIRestrictionGroup = dpi_groups["5f976f4ae3c58f018ec7dff6"]
-    assert group.id == "5f976f4ae3c58f018ec7dff6"
-    assert not group.attr_no_delete
-    assert group.attr_hidden_id is None
-    assert group.name == "No Media"
-    assert group.site_id == "5ba29dd4e3c58f026e9d7c38"
-    assert group.dpiapp_ids == ["5f976f62e3c58f018ec7e17d"]

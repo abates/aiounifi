@@ -2,16 +2,7 @@
 
 from dataclasses import dataclass
 
-from .api import ApiItem, ApiRequest
-
-
-@dataclass
-class NetworkConfRequest(ApiRequest):
-    """Request object for network configuration list."""
-
-    def __init__(self):
-        """Create device list request."""
-        super().__init__(method="get", path="/rest/networkconf")
+from .api import ApiItem
 
 
 @dataclass

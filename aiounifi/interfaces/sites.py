@@ -1,6 +1,8 @@
 """UniFi sites of network infrastructure."""
 
-from ..models.site import Site, SiteListRequest
+from aiounifi.models.api import BaseEndpoint
+
+from ..models.site import Site
 from .api_handlers import APIHandler
 
 
@@ -9,4 +11,4 @@ class Sites(APIHandler[Site]):
 
     obj_id_key = "_id"
     item_cls = Site
-    api_request = SiteListRequest()
+    list_endpoint = BaseEndpoint(path="/self/sites")

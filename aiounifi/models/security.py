@@ -2,16 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from .api import ApiItem, ApiRequest
-
-
-@dataclass
-class FirewallGroupRequest(ApiRequest):
-    """Request object for device list."""
-
-    def __init__(self):
-        """Create device list request."""
-        super().__init__(method="get", path="/rest/firewallgroup")
+from .api import ApiItem
 
 
 @dataclass
@@ -65,32 +56,3 @@ class FirewallRule(ApiItem):
     state_invalid: bool | None = None
     state_related: bool | None = None
     src_port: str | None = None
-
-
-@dataclass
-class FirewallRuleRequest(ApiRequest):
-    """Request object for firewall rules list."""
-
-    def __init__(self):
-        """Create firewall rule request."""
-        super().__init__(method="get", path="/rest/firewallrule")
-
-
-@dataclass
-class FirewallAddressGroupRequest(ApiRequest):
-    """Request object for firewall address groups list."""
-
-    def __init__(self):
-        """Create device list request."""
-        super().__init__(
-            method="get", path="/rest/firewallgroup?group_type=address-group"
-        )
-
-
-@dataclass
-class FirewallPortGroupRequest(ApiRequest):
-    """Request object for firewall port groups list."""
-
-    def __init__(self):
-        """Create device list request."""
-        super().__init__(method="get", path="/rest/firewallgroup?group_type=port-group")

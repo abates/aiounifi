@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import json
 import logging
 from typing import TYPE_CHECKING, Any
-
-import orjson
 
 from ..models.message import Message, MessageKey
 
 if TYPE_CHECKING:
-    from ..controller import Controller
+    from ..client import UnifiClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ UnsubscribeType = Callable[[], None]
 class MessageHandler:
     """Message handler class."""
 
-    def __init__(self, controller: Controller) -> None:
+    def __init__(self, controller: UnifiClient) -> None:
         """Initialize message handler class."""
         self.controller = controller
         self._subscribers: list[SubscriptionType] = []
@@ -57,8 +56,8 @@ class MessageHandler:
     def new_data(self, raw_bytes: bytes) -> None:
         """Convert bytes data into parseable JSON data.."""
         try:
-            self.handler(orjson.loads(raw_bytes))
-        except orjson.JSONDecodeError:
+            self.handler(json.loads(raw_bytes))
+        except json.JSONDecodeError:
             LOGGER.debug("Bad JSON data '%s'", raw_bytes)
 
     def handler(self, raw: dict[str, Any]) -> None:

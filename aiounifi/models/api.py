@@ -1,28 +1,45 @@
 """API management class and base class for the different end points."""
 
 from abc import ABC
-from collections.abc import Mapping
+from collections.abc import Callable
 import contextlib
-from dataclasses import dataclass, field, fields, is_dataclass
+from copy import deepcopy
+from dataclasses import dataclass, field, fields
 from types import UnionType
-from typing import Any, Protocol, TypeVar, get_args, get_origin, get_type_hints
-
-import orjson
-
-from ..errors import (
-    AiounifiException,
-    LoginRequired,
-    NoPermission,
-    TwoFaTokenRequired,
-    Unauthorized,
+from typing import (
+    Any,
+    Protocol,
+    TypeVar,
+    get_args,
+    get_origin,
+    get_type_hints,
 )
 
-ERRORS = {
-    "api.err.Invalid": Unauthorized,
-    "api.err.LoginRequired": LoginRequired,
-    "api.err.NoPermission": NoPermission,
-    "api.err.Ubic2faTokenRequired": TwoFaTokenRequired,
-}
+
+@dataclass
+class BaseEndpoint:
+    """Represents a basic REST endpoint."""
+
+    path: str
+    version: int = 1
+
+    def format(self, *args: object, **kwargs: object) -> str:
+        """Get the path of the endpoint."""
+
+        path = f"/api{self.path}" if self.version == 1 else f"/api/v2{self.path}"
+        return path.format(*args, **kwargs)
+
+
+@dataclass
+class ApiEndpoint(BaseEndpoint):
+    """Encapsulates an API endpoint with its HTTP method and path template."""
+
+    def __post_init__(self):
+        """Update the path with site specific info."""
+        if self.version == 1:
+            self.path = f"/s/{{site}}{self.path}"
+        else:
+            self.path = f"/site/{{site}}{self.path}"
 
 
 @dataclass
@@ -31,53 +48,6 @@ class ApiResponse:
 
     meta: dict[str, Any] = field(default_factory=dict)
     data: list[dict[str, Any]] = field(default_factory=list)
-
-
-@dataclass
-class ApiRequest:
-    """Data class with required properties of a request."""
-
-    method: str
-    path: str
-    data: Mapping[str, Any] | None = None
-
-    def full_path(self, site: str, is_unifi_os: bool) -> str:
-        """Create url to work with a specific controller."""
-        if is_unifi_os:
-            return f"/proxy/network/api/s/{site}{self.path}"
-        return f"/api/s/{site}{self.path}"
-
-    def decode(self, raw: bytes) -> ApiResponse:
-        """Put data, received from the unifi controller, into a TypedApiResponse."""
-        data: dict[str, Any] = orjson.loads(raw)
-
-        if "meta" in data and data["meta"]["rc"] == "error":
-            raise ERRORS.get(data["meta"]["msg"], AiounifiException)(data)
-
-        return ApiResponse(**data)
-
-
-@dataclass
-class ApiRequestV2(ApiRequest):
-    """Data class with required properties of a V2 API request."""
-
-    def full_path(self, site: str, is_unifi_os: bool) -> str:
-        """Create url to work with a specific controller."""
-        if is_unifi_os:
-            return f"/proxy/network/v2/api/site/{site}{self.path}"
-        return f"/v2/api/site/{site}{self.path}"
-
-    def decode(self, raw: bytes) -> ApiResponse:
-        """Put data, received from the unifi controller, into a TypedApiResponse."""
-        data = orjson.loads(raw)
-
-        if "errorCode" in data:
-            raise ERRORS.get(data["message"], AiounifiException)(data)
-
-        return ApiResponse(
-            meta={"rc": "ok", "msg": ""},
-            data=data if isinstance(data, list) else [data],
-        )
 
 
 def _get_annotation(annotation):
@@ -103,10 +73,11 @@ class FieldProcessor(Protocol):
 ApiItem_T = TypeVar("ApiItem_T", bound="ApiItem")
 
 
+@dataclass
 class ApiItem(ABC):
     """Base class for all end points using APIItems class."""
 
-    raw: dict[str, Any]
+    raw: dict[str, Any] = field(init=False, compare=False)
 
     @classmethod
     def _api_item_annotations(cls) -> dict[str, FieldProcessor]:
@@ -120,16 +91,30 @@ class ApiItem(ABC):
 
         annotations = get_type_hints(cls)
         for api_field in fields(cls):  # type: ignore
+            if api_field.name == "raw":
+                continue
+
+            custom_initializer = api_field.metadata.get("custom_initializer", None)
             annotation, origin, args = _get_annotation(annotations[api_field.name])
             api_item_annotations[api_field.name] = (  # type: ignore
-                cls._generate_field_processor(api_field.name, annotation, origin, args)
+                cls._generate_field_processor(
+                    api_field.name,
+                    annotation,
+                    origin,
+                    args,
+                    custom_initializer=custom_initializer,
+                )
             )
 
         return api_item_annotations
 
     @staticmethod
     def _generate_field_processor(
-        field_name: str, annotation: type, origin: type, args: tuple[Any, ...]
+        field_name: str,
+        annotation: type,
+        origin: type,
+        args: tuple[Any, ...],
+        custom_initializer: Callable[[Any], Any] | None = None,
     ) -> FieldProcessor:
         if origin is list:
             child_cls = args[0]
@@ -157,18 +142,17 @@ class ApiItem(ABC):
 
                 return process_api_item
 
-        if origin is None:
-            origin = annotation
+        initializer: Callable = custom_initializer or origin or annotation
 
         def process_default(kwargs):
             with contextlib.suppress(ValueError, TypeError):
                 if kwargs[field_name] is not None:
-                    kwargs[field_name] = origin(kwargs[field_name])
+                    kwargs[field_name] = initializer(kwargs[field_name])
 
         return process_default
 
     @classmethod
-    def from_json(cls, data: dict[str, Any]) -> "ApiItem_T":  # type: ignore
+    def from_json(cls, data: dict[str, Any] | Any) -> "ApiItem_T":  # type: ignore
         """Process an object reveived as JSON and create the appro  ate ApiItem instance.
 
         If the ApiItem subclass is a dataclass then the data dictionary is processed
@@ -191,23 +175,42 @@ class ApiItem(ABC):
             ApiItem: An initialized ApiItem
 
         """
-        if is_dataclass(cls):
-            kwargs = {}
-            for field in fields(cls):
-                if "json" in field.metadata and field.metadata["json"] in data:
-                    kwargs[field.name] = data[field.metadata["json"]]
-                elif field.name in data:
-                    kwargs[field.name] = data[field.name]
-                else:
-                    continue
+        kwargs = {}
+        for api_field in fields(cls):
+            if api_field.name == "raw":
+                continue
+            if "json" in api_field.metadata and api_field.metadata["json"] in data:
+                kwargs[api_field.name] = data[api_field.metadata["json"]]
+            elif api_field.name in data:
+                kwargs[api_field.name] = data[api_field.name]
+            else:
+                continue
 
-                cls._api_item_annotations()[field.name](kwargs)
-            instance = cls(**kwargs)  # type: ignore
-            instance.raw = data
-            return instance  # type: ignore
-        return cls(data)  # type: ignore
+            cls._api_item_annotations()[api_field.name](kwargs)
+        instance = cls(**kwargs)  # type: ignore
+        instance.raw = data
+        return instance  # type: ignore
 
-    def to_json(self) -> dict[str, Any]:
+    def __post_init__(self):
+        """Perform post-initialization updates."""
+        if not hasattr(self, "raw"):
+            self.raw = {}
+
+    def replace(self, other: "ApiItem"):
+        """Create a copy of the current object replacing non-None values from other into the new object."""
+        new_item_data = {}
+        for api_field in fields(self):
+            if api_field.name == "raw":
+                continue
+            new_item_data[api_field.name] = getattr(self, api_field.name)
+            new_value = getattr(other, api_field.name, None)
+            if new_value is not None:
+                new_item_data[api_field.name] = new_value
+        new_item = self.__class__(**new_item_data)
+        new_item.raw = deepcopy(getattr(self, "raw", {}))
+        return new_item
+
+    def to_json(self, output_fields: set[str] | None = None) -> dict[str, Any]:
         """Generate a dictionary suitable for marshaling to JSON.
 
         If the ApiItem is a dataclass, then this method will construct a dictionary
@@ -220,10 +223,17 @@ class ApiItem(ABC):
 
         """
         data = {}
-        for item_field in fields(self):  # type: ignore
-            value = getattr(self, item_field.name)
-            field_name = item_field.name
-            if json_name := item_field.metadata.get("json"):
+        api_item_fields = [
+            api_field
+            for api_field in fields(self)
+            if output_fields is None or api_field.name in output_fields
+        ]
+        for api_field in api_item_fields:
+            if api_field.name == "raw":
+                continue
+            value = getattr(self, api_field.name)
+            field_name = api_field.name
+            if json_name := api_field.metadata.get("json"):
                 field_name = json_name
             if isinstance(value, ApiItem):
                 data[field_name] = value.to_json()
@@ -235,10 +245,20 @@ class ApiItem(ABC):
                 data[field_name] = [item.to_json() for item in value]
             elif value is not None:
                 data[field_name] = value
-        return data
+        # include original values from the raw data
+        raw = {
+            key: value
+            for key, value in getattr(self, "raw", {}).items()
+            if output_fields is None or key in output_fields
+        }
+        return {**raw, **data}
 
 
-def json_field(json_key: str, **kwargs):
+def json_field(
+    json_key: str | None = None,
+    custom_initializer: Callable[[Any], Any] | None = None,
+    **kwargs,
+):
     """Return a dataclass field with json metadata.
 
     This method will create a dataclass field that has metadata indicating
@@ -247,7 +267,8 @@ def json_field(json_key: str, **kwargs):
     than it is in the dataclass itself.
 
     Args:
-        json_key (str): The json object key to translate
+        json_key (str | None): The json object key to translate
+        custom_initializer (Callable | None): A callable that is used for type conversion.
         kwargs (dict, Any): Keyword arguments passed along to the dataclass.field
             method. The most common is the `default` argument.
 
@@ -255,4 +276,9 @@ def json_field(json_key: str, **kwargs):
         Field: The initialized dataclass field
 
     """
-    return field(**kwargs, metadata={"json": json_key})
+    metadata = {}
+    if json_key:
+        metadata["json"] = json_key
+    if custom_initializer:
+        metadata["custom_initializer"] = custom_initializer
+    return field(**kwargs, metadata=metadata)

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from aiounifi.models.traffic import IPAddress, IPRange, TargetDevice
 
-from .api import ApiItem, ApiRequestV2, json_field
+from .api import ApiItem, json_field
 
 
 @dataclass
@@ -48,27 +48,3 @@ class TrafficRule(ApiItem):
     regions: list[str] | None = None
     schedule: Schedule | None = None
     target_devices: list[TargetDevice] | None = None
-
-
-@dataclass
-class TrafficRuleListRequest(ApiRequestV2):
-    """Request object for traffic rule list."""
-
-    def __init__(self):
-        """Create traffic rule request."""
-        super().__init__(method="get", path="/trafficrules", data=None)
-
-
-@dataclass
-class TrafficRuleEnableRequest(ApiRequestV2):
-    """Request object for traffic rule enable."""
-
-    def __init__(self, traffic_rule: TrafficRule, enable: bool):
-        """Create traffic rule enable request."""
-        data = traffic_rule.to_json()
-        data["enabled"] = enable
-        super().__init__(
-            method="put",
-            path=f"/trafficrules/{traffic_rule.id}",
-            data=data,
-        )

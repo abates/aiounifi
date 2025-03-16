@@ -1,9 +1,8 @@
 """DPI Restrictions as part of a UniFi network."""
 
-from ..models.dpi_restriction_group import (
-    DPIRestrictionGroup,
-    DpiRestrictionGroupListRequest,
-)
+from aiounifi.models.api import ApiEndpoint
+
+from ..models.dpi_restriction_group import DPIRestrictionGroup
 from ..models.message import MessageKey
 from .api_handlers import APIHandler
 
@@ -15,4 +14,4 @@ class DPIRestrictionGroups(APIHandler[DPIRestrictionGroup]):
     item_cls = DPIRestrictionGroup
     process_messages = (MessageKey.DPI_GROUP_ADDED, MessageKey.DPI_GROUP_UPDATED)
     remove_messages = (MessageKey.DPI_GROUP_REMOVED,)
-    api_request = DpiRestrictionGroupListRequest()
+    list_endpoint = ApiEndpoint(path="/rest/dpigroup")

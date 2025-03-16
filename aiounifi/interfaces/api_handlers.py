@@ -8,10 +8,10 @@ from dataclasses import dataclass
 import enum
 from typing import TYPE_CHECKING, Any, Protocol, final
 
-from ..models.api import ApiItem, ApiRequest
+from ..models.api import ApiEndpoint, ApiItem, ApiResponse
 
 if TYPE_CHECKING:
-    from ..controller import Controller
+    from ..client import UnifiClient
     from ..models.message import Message, MessageKey
 
 
@@ -35,7 +35,7 @@ class Callback(Protocol):
 class Unsubscribe(Protocol):
     """Remove a event callback from the subscription handler."""
 
-    def __call__() -> None: ...  # noqa: D102
+    def __call__(self) -> None: ...  # type: ignore # noqa: D102
 
 
 @dataclass
@@ -43,7 +43,7 @@ class Subscription:
     """A subscription for a message stream."""
 
     callback: Callback
-    event_filter: set[ItemEvent]
+    event_filter: set[ItemEvent] | None
 
 
 class SubscriptionHandler(ABC):
@@ -76,7 +76,10 @@ class SubscriptionHandler(ABC):
         if isinstance(event_filter, ItemEvent):
             event_filter = (event_filter,)
 
-        subscription = Subscription(callback=callback, event_filter=event_filter)
+        subscription = Subscription(
+            callback=callback,
+            event_filter=None if event_filter is None else set(event_filter),
+        )
 
         if id_filter is None:
             id_filter = (ID_FILTER_ALL,)
@@ -94,31 +97,55 @@ class SubscriptionHandler(ABC):
                 if not self._subscribers[obj_id]:
                     del self._subscribers[obj_id]
 
-        return unsubscribe
+        return unsubscribe  # type: ignore
 
 
-class APIHandler[T: ApiItem](SubscriptionHandler, UserDict[T]):
+class APIHandler[T: ApiItem](SubscriptionHandler, UserDict[str, T]):
     """Base class for a map of API Items."""
 
     obj_id_key: str
     item_cls: type[T]
-    api_request: ApiRequest
+
     process_messages: tuple[MessageKey, ...] = ()
     remove_messages: tuple[MessageKey, ...] = ()
 
-    def __init__(self, controller: Controller) -> None:
+    list_endpoint: ApiEndpoint | None = None
+    create_endpoint: ApiEndpoint | None = None
+    update_endpoint: ApiEndpoint | None = None
+    delete_endpoint: ApiEndpoint | None = None
+
+    def __init__(self, client: UnifiClient) -> None:
         """Initialize API handler."""
         super().__init__()
-        self.controller = controller
+        self.client = client
 
         if message_filter := self.process_messages + self.remove_messages:
-            controller.messages.subscribe(self.process_message, message_filter)
+            client.messages.subscribe(self.process_message, message_filter)
 
     @final
-    async def update(self) -> None:
+    async def update(self) -> None:  # type: ignore
         """Refresh data."""
-        raw = await self.controller.request(self.api_request)
-        self.process_raw(raw.data)
+        if self.list_endpoint is None:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} does not implement a list endpoint."
+            )
+
+        response = await self.client.get(self.list_endpoint)
+        if response:
+            self.process_raw(response.data)
+
+    async def save(self, api_item: T, fields: set[str] | None = None) -> ApiResponse:
+        """Save a previously created api item."""
+        if self.update_endpoint is None:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} does not implement an update endpoint."
+            )
+
+        data = api_item.to_json(fields)
+        response = await self.client.put(self.update_endpoint, api_item, data)
+        if response:
+            self.process_raw(response.data)
+        return response
 
     def process_raw(self, raw: list[dict[str, Any]]) -> None:
         """Process full raw response."""

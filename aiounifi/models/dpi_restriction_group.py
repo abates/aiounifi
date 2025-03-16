@@ -2,16 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from .api import ApiItem, ApiRequest, json_field
-
-
-@dataclass
-class DpiRestrictionGroupListRequest(ApiRequest):
-    """Request object for DPI restriction group list."""
-
-    def __init__(self):
-        """Create DPI restriction group list request."""
-        super().__init__(method="get", path="/rest/dpigroup")
+from .api import ApiItem, json_field
 
 
 @dataclass

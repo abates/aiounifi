@@ -8,7 +8,7 @@ from ..models.device import Outlet
 from .api_handlers import APIHandler, ItemEvent
 
 if TYPE_CHECKING:
-    from ..controller import Controller
+    from ..client import UnifiClient
 
 
 class Outlets(APIHandler[Outlet]):
@@ -16,20 +16,22 @@ class Outlets(APIHandler[Outlet]):
 
     item_cls = Outlet
 
-    def __init__(self, controller: Controller) -> None:
+    def __init__(self, controller: UnifiClient) -> None:
         """Initialize API handler."""
         super().__init__(controller)
         controller.devices.subscribe(self.process_device)
 
-    def process_device(self, event: ItemEvent, device_id: str) -> None:
+    def process_device(self, event: ItemEvent, obj_id: str) -> None:
         """Add, update, remove."""
         if event in (ItemEvent.ADDED, ItemEvent.CHANGED):
-            device = self.controller.devices[device_id]
+            device = self.client.devices[obj_id]
             for outlet in device.outlet_table:
-                obj_id = f"{device_id}_{outlet.index}"
-                self[obj_id] = outlet
+                outlet_id = f"{obj_id}_{outlet.index}"
+                self[outlet_id] = outlet
             return
 
-        matched_obj_ids = [obj_id for obj_id in self if obj_id.startswith(device_id)]
-        for obj_id in matched_obj_ids:
-            self.pop(obj_id)
+        matched_obj_ids = [
+            outlet_id for outlet_id in self if outlet_id.startswith(obj_id)
+        ]
+        for outlet_id in matched_obj_ids:
+            self.pop(outlet_id)
