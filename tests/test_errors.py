@@ -1,3 +1,5 @@
+"""Tests for error handling methods."""
+
 from http import HTTPStatus
 from unittest.mock import Mock
 

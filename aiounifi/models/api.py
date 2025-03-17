@@ -17,21 +17,26 @@ from typing import (
 
 
 @dataclass
-class BaseEndpoint:
+class Endpoint:
     """Represents a basic REST endpoint."""
 
     path: str
     version: int = 1
 
     def format(self, *args: object, **kwargs: object) -> str:
-        """Get the path of the endpoint."""
+        """Format the endpoint path to produce a complete path.
+
+        Returns:
+            str: The full path of the endpoint.
+
+        """
 
         path = f"/api{self.path}" if self.version == 1 else f"/api/v2{self.path}"
         return path.format(*args, **kwargs)
 
 
 @dataclass
-class ApiEndpoint(BaseEndpoint):
+class ApiEndpoint(Endpoint):
     """Encapsulates an API endpoint with its HTTP method and path template."""
 
     def __post_init__(self):

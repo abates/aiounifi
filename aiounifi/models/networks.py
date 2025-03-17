@@ -7,12 +7,16 @@ from .api import ApiItem
 
 @dataclass
 class WanProviderCapabilities(ApiItem):
+    """Model that indicates ISP provider capabilities."""
+
     download_kilobits_per_second: int | None = None
     upload_kilobits_per_second: int | None = None
 
 
 @dataclass
 class NetworkConf(ApiItem):
+    """Base class for network configuration."""
+
     _id: str | None = None
     attr_hidden_id: str | None = None
     attr_no_delete: bool | None = None
@@ -26,6 +30,8 @@ class NetworkConf(ApiItem):
 
 @dataclass
 class CorporateNetworkConf(NetworkConf):
+    """Data model for corporate network configuration."""
+
     auto_scale_enabled: bool | None = None
     dhcp_relay_enabled: bool | None = None
     dhcpd_boot_enabled: bool | None = None
@@ -80,6 +86,8 @@ class CorporateNetworkConf(NetworkConf):
 
 @dataclass
 class WanNetworkConf(NetworkConf):
+    """Data model for WAN network configuration."""
+
     igmp_proxy_for: str | None = None
     igmp_proxy_upstream: bool | None = None
     ipv6_wan_delegation_type: str | None = None

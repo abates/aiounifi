@@ -11,7 +11,7 @@ from typing import Any
 import aiohttp
 
 from aiounifi import errors
-from aiounifi.models.api import ApiEndpoint, ApiItem, ApiResponse
+from aiounifi.models.api import ApiEndpoint, ApiItem, ApiResponse, Endpoint
 
 from .interfaces.clients import Clients
 from .interfaces.clients_all import ClientsAll
@@ -144,12 +144,12 @@ class UnifiClient:
         return self._is_unifi_os
 
     async def get(
-        self, endpoint: ApiEndpoint, api_item: ApiItem | None = None
+        self, endpoint: Endpoint, api_item: ApiItem | None = None
     ) -> ApiResponse:
         """Perform an API request using the GET method.
 
         Args:
-            endpoint (ApiEndpoint): The endpoint to call.
+            endpoint (Endpoint): The endpoint to call.
             api_item (ApiItem | None, optional): Optional item to pass to the `endpoint.format`
                 method. Defaults to None.
 
@@ -163,12 +163,12 @@ class UnifiClient:
         )
 
     async def post(
-        self, endpoint: ApiEndpoint, api_item: ApiItem | None, data: dict[str, Any]
+        self, endpoint: Endpoint, api_item: ApiItem | None, data: dict[str, Any]
     ) -> ApiResponse:
         """Perform an API request using the POST method.
 
         Args:
-            endpoint (ApiEndpoint): The endpoint to call.
+            endpoint (Endpoint): The endpoint to call.
             api_item (ApiItem | None, optional): Optional item to pass to the `endpoint.format`
                 method. Defaults to None.
             data (dict[str, Any]): Any data to be marshaled to JSON and sent with the POST request.
@@ -183,12 +183,12 @@ class UnifiClient:
         )
 
     async def put(
-        self, endpoint: ApiEndpoint, api_item: ApiItem | None, data: dict[str, Any]
+        self, endpoint: Endpoint, api_item: ApiItem | None, data: dict[str, Any]
     ) -> ApiResponse:
         """Perform an API request using the PUT method.
 
         Args:
-            endpoint (ApiEndpoint): The endpoint to call.
+            endpoint (Endpoint): The endpoint to call.
             api_item (ApiItem | None, optional): Optional item to pass to the `endpoint.format`
                 method. Defaults to None.
             data (dict[str, Any]): Any data to be marshaled to JSON and sent with the POST request.
@@ -206,7 +206,7 @@ class UnifiClient:
     async def endpoint_request(
         self,
         method: str,
-        endpoint: ApiEndpoint,
+        endpoint: Endpoint,
         api_item: ApiItem | None = None,
         data: dict[str, Any] | None = None,
     ) -> ApiResponse:
@@ -227,7 +227,8 @@ class UnifiClient:
             async with self.session.request(**request_args) as response:
                 response_data = await response.json() if response.status != 204 else {}
 
-        errors.raise_for_unifi_error(endpoint.version, response_data)
+        if isinstance(endpoint, ApiEndpoint):
+            errors.raise_for_unifi_error(endpoint.version, response_data)
         return ApiResponse(**response_data)
 
     @check_session
@@ -254,7 +255,6 @@ class UnifiClient:
                     self.session.headers,
                     self.session.cookie_jar._cookies,  # type: ignore[attr-defined]
                 )
-
                 async for message in websocket_connection:
                     self.ws_message_received = datetime.datetime.now(datetime.UTC)
 

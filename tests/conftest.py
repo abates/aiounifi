@@ -15,6 +15,8 @@ from aiounifi.models.api import ApiResponse
 def bind_test_method(
     handler, method_name, request_args
 ) -> tuple[Callable, tuple[Any], dict[str, Any]]:
+    """Bind arguments and keyword arguments to a method signature."""
+
     method = getattr(handler, method_name)
     sig = signature(method)
 

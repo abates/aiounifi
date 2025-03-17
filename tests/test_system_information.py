@@ -1,4 +1,4 @@
-# """Test system information API."""
+"""Test system information API."""
 
 # import pytest
 

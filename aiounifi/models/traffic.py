@@ -1,3 +1,5 @@
+"""Data models related to IP traffic."""
+
 from dataclasses import dataclass
 
 from aiounifi.models.api import ApiItem

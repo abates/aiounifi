@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import enum
 from typing import TYPE_CHECKING, Any, Protocol, final
 
-from ..models.api import ApiEndpoint, ApiItem, ApiResponse
+from ..models.api import ApiItem, ApiResponse, Endpoint
 
 if TYPE_CHECKING:
     from ..client import UnifiClient
@@ -109,10 +109,10 @@ class APIHandler[T: ApiItem](SubscriptionHandler, UserDict[str, T]):
     process_messages: tuple[MessageKey, ...] = ()
     remove_messages: tuple[MessageKey, ...] = ()
 
-    list_endpoint: ApiEndpoint | None = None
-    create_endpoint: ApiEndpoint | None = None
-    update_endpoint: ApiEndpoint | None = None
-    delete_endpoint: ApiEndpoint | None = None
+    list_endpoint: Endpoint | None = None
+    create_endpoint: Endpoint | None = None
+    update_endpoint: Endpoint | None = None
+    delete_endpoint: Endpoint | None = None
 
     def __init__(self, client: UnifiClient) -> None:
         """Initialize API handler."""

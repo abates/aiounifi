@@ -9,6 +9,7 @@ from tests.fixtures import TEST_DEVICE_1, TEST_DEVICE_2, TEST_DEVICE_3
 
 
 def test_process_device():
+    """Verify the `process_device` callback correctly manipulates ports."""
     devices = {
         TEST_DEVICE_1.device_id: TEST_DEVICE_1,
         TEST_DEVICE_2.device_id: TEST_DEVICE_2,

@@ -1,8 +1,13 @@
+"""Confirm the behavior of the REST client."""
+
+from collections import defaultdict
 from http import HTTPStatus
 import json
 from typing import Any
-from unittest.mock import AsyncMock, Mock, PropertyMock, call, patch
+from unittest.mock import ANY, AsyncMock, Mock, PropertyMock, call, patch
 
+import aiohttp
+from aiohttp import WSMsgType
 import pytest
 
 from aiounifi import errors
@@ -54,6 +59,7 @@ async def test_connect(
             await client.connect()
             assert client.is_unifi_os == expected_value
             assert client.session is not None
+            await client.session.close()
 
 
 @pytest.mark.parametrize(
@@ -163,6 +169,7 @@ async def test_client_methods(method_name, call_args):
 
 
 async def test_endpoint_request():
+    """Verify that `endpoint_request` calls the underlying session and re-authenticates when needed."""
     client = UnifiClient(Configuration("host", username="user", password="pass"))
     response = AsyncMock()
     response.__aenter__.return_value = response
@@ -195,3 +202,160 @@ async def test_endpoint_request():
             call(method="get", url="/api/s/default/endpoint", json=None, ssl=False),
         ]
     )
+
+
+@pytest.mark.parametrize(
+    (
+        "unifi_os",
+        "input_messages",
+        "raise_error",
+        "expected_messages",
+        "expected_logs",
+        "expected_error",
+    ),
+    [
+        (False, [], None, [], [], None),
+        (True, [], None, [], [], None),
+        (
+            False,
+            [Mock(type=WSMsgType.TEXT, data={"key": "value"})],
+            None,
+            [{"key": "value"}],
+            [("debug", ("Websocket '%s'", {"key": "value"}))],
+            None,
+        ),
+        (
+            False,
+            [Mock(type=WSMsgType.CLOSED, data={"key": "value"})],
+            None,
+            [],
+            [
+                (
+                    "warning",
+                    ("Connection closed to UniFi websocket '%s'", {"key": "value"}),
+                )
+            ],
+            None,
+        ),
+        (
+            False,
+            [Mock(type=WSMsgType.ERROR, data={"key": "value"})],
+            None,
+            [],
+            [
+                (
+                    "error",
+                    ("UniFi websocket error: '%s'", {"key": "value"}),
+                )
+            ],
+            errors.WebsocketError,
+        ),
+        (
+            False,
+            [Mock(type=WSMsgType.BINARY, data={})],
+            None,
+            [],
+            [
+                (
+                    "warning",
+                    (
+                        "Unexpected websocket message type '%s' with data '%s'",
+                        WSMsgType.BINARY,
+                        {},
+                    ),
+                )
+            ],
+            None,
+        ),
+        (
+            False,
+            [],
+            aiohttp.ClientConnectorError(Mock(), Mock()),
+            [],
+            [("error", ("Error connecting to UniFi websocket: '%s'", ANY))],
+            aiohttp.ClientConnectorError,
+        ),
+        (
+            False,
+            [],
+            aiohttp.WSServerHandshakeError(Mock(), Mock()),
+            [],
+            [
+                (
+                    "error",
+                    ("Server handshake error connecting to UniFi websocket: '%s'", ANY),
+                )
+            ],
+            aiohttp.WSServerHandshakeError,
+        ),
+        (
+            False,
+            [],
+            ValueError("Foo Error"),
+            [],
+            [("exception", (ANY,))],
+            errors.WebsocketError,
+        ),
+    ],
+)
+async def test_websocket_listener(
+    unifi_os,
+    input_messages,
+    raise_error,
+    expected_messages,
+    expected_logs,
+    expected_error,
+):
+    """Verify the behavior of the websocket loop."""
+    with patch("aiounifi.client.LOGGER") as log_patch:
+        client = UnifiClient(Configuration("host", username="user", password="pass"))
+
+        ws_response = AsyncMock()
+        ws_response.__aenter__.return_value = ws_response
+        ws_response.__aexit__.return_value = None
+        ws_response.__aiter__.return_value = input_messages.__iter__()
+
+        if raise_error is None:
+            client.session = Mock(ws_connect=Mock(return_value=ws_response))
+        else:
+            client.session = Mock(ws_connect=Mock(side_effect=raise_error))
+
+        got_messages = []
+        client.messages = Mock(new_data=lambda data: got_messages.append(data))
+        client._is_unifi_os = unifi_os
+
+        expected_log_calls = defaultdict(list)
+        for loglevel, args in expected_logs:
+            expected_log_calls[loglevel].append(call(*args))
+
+        if expected_error:
+            with pytest.raises(expected_error):
+                await client.start_websocket()
+        else:
+            await client.start_websocket()
+            if unifi_os:
+                expected_url = "wss://host:8443/proxy/network/wss/s/default/events"
+            else:
+                expected_url = "wss://host:8443/wss/s/default/events"
+
+            client.session.ws_connect.assert_called_with(
+                expected_url,
+                ssl=False,
+                heartbeat=15,
+                compress=12,
+            )
+
+            assert expected_messages == got_messages
+            expected_log_calls["debug"].insert(
+                0,
+                call(
+                    "Connected to UniFi websocket %s, headers: %s, cookiejar: %s",
+                    expected_url,
+                    client.session.headers,
+                    client.session.cookie_jar._cookies,
+                ),
+            )
+
+        print(log_patch.mock_calls)
+        for log_level, calls in expected_log_calls.items():
+            getattr(log_patch, log_level).assert_has_calls(calls)
